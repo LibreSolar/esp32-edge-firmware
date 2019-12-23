@@ -114,7 +114,6 @@ static void can_receive_task(void *arg)
 
     while (1) {
         if (can_receive(&message, pdMS_TO_TICKS(10000)) == ESP_OK) {
-            gpio_set_level(GPIO_LED, 0);
 
             // ThingSet publication message format: https://thingset.github.io/spec/can
             //msg_priority = message.identifier >> 26;
@@ -150,8 +149,6 @@ static void can_receive_task(void *arg)
             }
             printf("\n");
             */
-
-            gpio_set_level(GPIO_LED, 1);
         }
     }
 }
@@ -380,17 +377,26 @@ static void http_get_task(void *arg)
 
         if (update_bms_received) {
             update_bms_received = false;
+            gpio_set_level(GPIO_LED, 0);
             send_emoncms(res, EMONCMS_NODE_BMS,
                 data_obj_bms, sizeof(data_obj_bms)/sizeof(DataObject));
+            vTaskDelay(100 / portTICK_PERIOD_MS);
         }
+        gpio_set_level(GPIO_LED, 1);
+
+        vTaskDelay(100 / portTICK_PERIOD_MS);
 
         if (update_mppt_received) {
             update_mppt_received = false;
+            gpio_set_level(GPIO_LED, 0);
             send_emoncms(res, EMONCMS_NODE_MPPT,
                 data_obj_mppt, sizeof(data_obj_mppt)/sizeof(DataObject));
+            vTaskDelay(100 / portTICK_PERIOD_MS);
         }
+        gpio_set_level(GPIO_LED, 1);
 
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        // sending interval almost 10s
+        vTaskDelay(9000 / portTICK_PERIOD_MS);
     }
 }
 
