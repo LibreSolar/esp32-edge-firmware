@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2019 Martin Jäger / Libre Solar
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #define CONFIG_WIFI_SSID        "your_ssid"
 #define CONFIG_WIFI_PASSWORD    "pass"

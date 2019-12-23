@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2019 Martin Jäger / Libre Solar
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
