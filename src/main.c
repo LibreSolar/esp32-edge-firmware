@@ -297,8 +297,6 @@ static int send_emoncms(struct addrinfo *res, const char *node_name, DataObject 
     int s = socket(res->ai_family, res->ai_socktype, 0);
     if (s < 0) {
         ESP_LOGE(TAG, "... Failed to allocate socket.");
-        freeaddrinfo(res);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
         return -1;
     }
     ESP_LOGI(TAG, "... allocated socket\r\n");
@@ -306,12 +304,9 @@ static int send_emoncms(struct addrinfo *res, const char *node_name, DataObject 
     if (connect(s, res->ai_addr, res->ai_addrlen) != 0) {
         ESP_LOGE(TAG, "... socket connect failed errno=%d", errno);
         close(s);
-        freeaddrinfo(res);
-        vTaskDelay(4000 / portTICK_PERIOD_MS);
         return -1;
     }
     ESP_LOGI(TAG, "... connected");
-    freeaddrinfo(res);
 
     int err = write(s, http_header, strlen(http_header));
     sprintf(buf, "Content-Length: %d\r\n\r\n", strlen(http_body));
@@ -322,7 +317,6 @@ static int send_emoncms(struct addrinfo *res, const char *node_name, DataObject 
     if (err < 0) {
         ESP_LOGE(TAG, "... socket send failed");
         close(s);
-        vTaskDelay(4000 / portTICK_PERIOD_MS);
         return -1;
     }
     ESP_LOGI(TAG, "... socket send success");
@@ -397,6 +391,8 @@ static void http_get_task(void *arg)
 
         // sending interval almost 10s
         vTaskDelay(9000 / portTICK_PERIOD_MS);
+
+        freeaddrinfo(res);
     }
 }
 
