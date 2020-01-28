@@ -18,6 +18,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
+#include "driver/uart.h"
 #include "driver/can.h"
 #include "nvs_flash.h"
 #include "sdkconfig.h"
@@ -34,8 +35,14 @@
 #define GPIO_CAN_RX     4
 #define GPIO_CAN_TX     5
 #define GPIO_CAN_STB    12
+#define GPIO_UART_RX    (GPIO_NUM_16)
+#define GPIO_UART_TX    (GPIO_NUM_17)
 
 #define RX_TASK_PRIO    9       // receiving task priority
+
+static const int uart_num = UART_NUM_2;
+static const int UART_RX_BUF_SIZE = 1024;
+
 static const char* TAG = "main";    // for logging
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
@@ -47,6 +54,9 @@ const int CONNECTED_BIT = BIT0;
 
 static bool update_bms_received = false;
 static bool update_mppt_received = false;
+
+static bool update_serial_received = false;
+char serial_json_buf[500];
 
 static const can_timing_config_t t_config = CAN_TIMING_CONFIG_250KBITS();
 static const can_filter_config_t f_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
@@ -105,6 +115,30 @@ DataObject data_obj_mppt[] = {
     {0xA4, "Dis_Ah",        {0}, 0}
 };
 
+static void can_setup()
+{
+    // switch CAN transceiver on (STB = low)
+    gpio_pad_select_gpio(GPIO_CAN_STB);
+    gpio_set_direction(GPIO_CAN_STB, GPIO_MODE_OUTPUT);
+    gpio_set_level(GPIO_CAN_STB, 0);
+
+    if (can_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
+        printf("CAN driver installed\n");
+    }
+    else {
+        printf("Failed to install CAN driver\n");
+        return;
+    }
+
+    if (can_start() == ESP_OK) {
+        printf("CAN driver started\n");
+    }
+    else {
+        printf("Failed to start CAN driver\n");
+        return;
+    }
+}
+
 static void can_receive_task(void *arg)
 {
     can_message_t message;
@@ -138,10 +172,9 @@ static void can_receive_task(void *arg)
                 }
                 update_mppt_received = true;
             }
-
             /*
-            printf("CAN Message from node %u received with priority %u. Data object 0x%.2x = 0x",
-                node_id, msg_priority, data_object_id);
+            printf("CAN Message from node %u received. Data object 0x%.2x = 0x",
+                node_id, data_object_id);
             if (!(message.flags & CAN_MSG_FLAG_RTR)) {
                 for (int i = 0; i < message.data_length_code; i++) {
                     printf("%.2x", message.data[i]);
@@ -166,7 +199,7 @@ static int generate_json_string(char *buf, size_t len, DataObject *objs, size_t 
 
         // print data object ID
         if (pos == 0) {
-            pos += snprintf(&buf[pos], len - pos, "\"%s\":", objs[i].name);
+            pos += snprintf(&buf[pos], len - pos, "{\"%s\":", objs[i].name);
         }
         else {
             pos += snprintf(&buf[pos], len - pos, ",\"%s\":", objs[i].name);
@@ -231,6 +264,10 @@ static int generate_json_string(char *buf, size_t len, DataObject *objs, size_t 
                 break;
         }
     }
+
+    if (pos < len - 1) {
+        buf[pos++] = '}';
+    }
     return pos;
 }
 
@@ -276,10 +313,10 @@ static void initialise_wifi(void)
     ESP_ERROR_CHECK( esp_wifi_start() );
 }
 
-static int send_emoncms(struct addrinfo *res, const char *node_name, DataObject *objs, size_t num_objs)
+static int send_emoncms(struct addrinfo *res, const char *node_name, const char *json_str)
 {
     static char buf[500];
-    static char http_body[500];
+    static char http_body[600];
     char recv_buf[64];
 
     const char *http_header =
@@ -290,8 +327,7 @@ static int send_emoncms(struct addrinfo *res, const char *node_name, DataObject 
         "Content-Type: application/x-www-form-urlencoded\r\n"
         "Connection: close\r\n";
 
-    int pos = snprintf(http_body, sizeof(http_body), "node=%s&json=", node_name);
-    pos += generate_json_string(&http_body[pos], sizeof(http_body) - pos, objs, num_objs);
+    int pos = snprintf(http_body, sizeof(http_body), "node=%s&json=%s", node_name, json_str);
     printf("HTTP body for %s: %s\n", node_name, http_body);
 
     int s = socket(res->ai_family, res->ai_socktype, 0);
@@ -345,10 +381,16 @@ static void http_get_task(void *arg)
     struct addrinfo *res;
     struct in_addr *addr;
 
+    // buffer for JSON string generated from received data objects via CAN
+    static char json_buf[500];
+
     while (1) {
 
         // wait until we receive an update
-        while (update_bms_received == false && update_mppt_received == false) {
+        while (update_bms_received == false &&
+               update_mppt_received == false &&
+               update_serial_received == false)
+        {
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
 
@@ -370,10 +412,11 @@ static void http_get_task(void *arg)
         ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
 
         if (update_bms_received) {
-            update_bms_received = false;
             gpio_set_level(GPIO_LED, 0);
-            send_emoncms(res, EMONCMS_NODE_BMS,
+            generate_json_string(json_buf, sizeof(json_buf),
                 data_obj_bms, sizeof(data_obj_bms)/sizeof(DataObject));
+            send_emoncms(res, EMONCMS_NODE_BMS, json_buf);
+            update_bms_received = false;
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
         gpio_set_level(GPIO_LED, 1);
@@ -381,56 +424,107 @@ static void http_get_task(void *arg)
         vTaskDelay(100 / portTICK_PERIOD_MS);
 
         if (update_mppt_received) {
-            update_mppt_received = false;
             gpio_set_level(GPIO_LED, 0);
-            send_emoncms(res, EMONCMS_NODE_MPPT,
+            generate_json_string(json_buf, sizeof(json_buf),
                 data_obj_mppt, sizeof(data_obj_mppt)/sizeof(DataObject));
+            send_emoncms(res, EMONCMS_NODE_MPPT, json_buf);
+            update_mppt_received = false;
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+        }
+        gpio_set_level(GPIO_LED, 1);
+
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+
+        if (update_serial_received) {
+            gpio_set_level(GPIO_LED, 0);
+            send_emoncms(res, EMONCMS_NODE_SERIAL, serial_json_buf);
+            update_serial_received = false;
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
         gpio_set_level(GPIO_LED, 1);
 
         // sending interval almost 10s
-        vTaskDelay(9000 / portTICK_PERIOD_MS);
+        vTaskDelay(8000 / portTICK_PERIOD_MS);
 
         freeaddrinfo(res);
     }
 }
 
+void uart_setup(void)
+{
+    const uart_config_t uart_config = {
+        .baud_rate = 115200,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    };
+    ESP_ERROR_CHECK(
+        uart_param_config(uart_num, &uart_config));
+    ESP_ERROR_CHECK(
+        uart_set_pin(uart_num, GPIO_UART_TX, GPIO_UART_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(
+        uart_driver_install(uart_num, UART_RX_BUF_SIZE * 2, 0, 0, NULL, 0));
+}
+
+static void uart_rx_task(void *arg)
+{
+    uint8_t data[UART_RX_BUF_SIZE];
+    int pos = 0;        // stores next free position for incoming characters
+    bool buffer_full = false;
+
+    while (1) {
+        const int len = uart_read_bytes(UART_NUM_2,
+            &data[pos], sizeof(data) - pos - 1, 20 / portTICK_RATE_MS);
+
+        for (int i = 0; i < len; i++) {
+            if (data[pos] == '\r' || data[pos] == '\n') {
+                if (!buffer_full) {  // only start processing if all characters till end of line were received
+                    if (data[0] == '#' && data[1] == ' ' && pos > 2) {
+                        data[pos] = '\0';
+                        //printf("Received pub msg with %d bytes: %s\n", pos, &data[2]);
+                        int len_json = strlen((char *)&data[2]);
+                        if (update_serial_received == false && len_json < sizeof(serial_json_buf) - 1) {
+                            // copy json string
+                            strncpy(serial_json_buf, (char *)&data[2], len_json);
+                            serial_json_buf[len_json] = '\0';
+                            update_serial_received = true;
+                        }
+                    }
+                }
+                else {
+                    // reset and start from beginning
+                    buffer_full = false;
+                }
+                pos = 0;
+            }
+            else if (pos >= sizeof(data) - 1) {   // last position necessary for null-termination
+                buffer_full = true;
+            }
+            else {
+                pos++;
+            }
+        }
+    }
+}
 
 void app_main(void)
 {
     nvs_flash_init();
 
-    // configure the pad to GPIO and set direction
+    // configure the LED pad as GPIO and set direction
     gpio_pad_select_gpio(GPIO_LED);
     gpio_set_direction(GPIO_LED, GPIO_MODE_OUTPUT);
     gpio_set_level(GPIO_LED, 1);
 
-    // switch CAN transceiver on (STB = low)
-    gpio_pad_select_gpio(GPIO_CAN_STB);
-    gpio_set_direction(GPIO_CAN_STB, GPIO_MODE_OUTPUT);
-    gpio_set_level(GPIO_CAN_STB, 0);
-
     vTaskDelay(1000 / portTICK_PERIOD_MS);
  	printf("Booting Libre Solar Data Manager...\n");
 
-    if (can_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
-        printf("CAN driver installed\n");
-    }
-    else {
-        printf("Failed to install CAN driver\n");
-        return;
-    }
-
-    if (can_start() == ESP_OK) {
-        printf("CAN driver started\n");
-    }
-    else {
-        printf("Failed to start CAN driver\n");
-        return;
-    }
-
+    can_setup();
     xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096, NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
+
+    uart_setup();
+    xTaskCreatePinnedToCore(uart_rx_task, "UART_rx", 4096, NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
 
     initialise_wifi();
     xTaskCreate(&http_get_task, "http_get_task", 4096, NULL, 5, NULL);

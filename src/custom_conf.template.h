@@ -13,3 +13,4 @@
 #define EMONCMS_APIKEY      "your_api_key"
 #define EMONCMS_NODE_MPPT   "mppt"
 #define EMONCMS_NODE_BMS    "bms"
+#define EMONCMS_NODE_SERIAL "serial"
