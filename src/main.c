@@ -31,13 +31,6 @@
 
 #include "custom_conf.h"
 
-#define GPIO_LED        18
-#define GPIO_CAN_RX     4
-#define GPIO_CAN_TX     5
-#define GPIO_CAN_STB    12
-#define GPIO_UART_RX    (GPIO_NUM_16)
-#define GPIO_UART_TX    (GPIO_NUM_17)
-
 #define RX_TASK_PRIO    9       // receiving task priority
 
 static const int uart_num = UART_NUM_2;
@@ -115,12 +108,16 @@ DataObject data_obj_mppt[] = {
     {0xA4, "Dis_Ah",        {0}, 0}
 };
 
+#if defined(GPIO_CAN_RX) && defined(GPIO_CAN_TX)
+
 static void can_setup()
 {
+#ifdef GPIO_CAN_STB
     // switch CAN transceiver on (STB = low)
     gpio_pad_select_gpio(GPIO_CAN_STB);
     gpio_set_direction(GPIO_CAN_STB, GPIO_MODE_OUTPUT);
     gpio_set_level(GPIO_CAN_STB, 0);
+#endif
 
     if (can_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
         printf("CAN driver installed\n");
@@ -185,6 +182,8 @@ static void can_receive_task(void *arg)
         }
     }
 }
+
+#endif /* CAN */
 
 static int generate_json_string(char *buf, size_t len, DataObject *objs, size_t num_objs)
 {
@@ -327,7 +326,7 @@ static int send_emoncms(struct addrinfo *res, const char *node_name, const char 
         "Content-Type: application/x-www-form-urlencoded\r\n"
         "Connection: close\r\n";
 
-    int pos = snprintf(http_body, sizeof(http_body), "node=%s&json=%s", node_name, json_str);
+    snprintf(http_body, sizeof(http_body), "node=%s&json=%s", node_name, json_str);
     printf("HTTP body for %s: %s\n", node_name, http_body);
 
     int s = socket(res->ai_family, res->ai_socktype, 0);
@@ -450,6 +449,8 @@ static void http_get_task(void *arg)
     }
 }
 
+#if defined(GPIO_UART_RX) && defined(GPIO_UART_TX)
+
 void uart_setup(void)
 {
     const uart_config_t uart_config = {
@@ -508,6 +509,8 @@ static void uart_rx_task(void *arg)
     }
 }
 
+#endif /* UART */
+
 void app_main(void)
 {
     nvs_flash_init();
@@ -520,11 +523,15 @@ void app_main(void)
     vTaskDelay(1000 / portTICK_PERIOD_MS);
  	printf("Booting Libre Solar Data Manager...\n");
 
+#if defined(GPIO_CAN_RX) && defined(GPIO_CAN_TX)
     can_setup();
     xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096, NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
+#endif
 
+#if defined(GPIO_UART_RX) && defined(GPIO_UART_TX)
     uart_setup();
     xTaskCreatePinnedToCore(uart_rx_task, "UART_rx", 4096, NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
+#endif
 
     initialise_wifi();
     xTaskCreate(&http_get_task, "http_get_task", 4096, NULL, 5, NULL);
