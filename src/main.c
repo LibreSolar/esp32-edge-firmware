@@ -31,6 +31,9 @@
 
 #include "custom_conf.h"
 
+// simple watchdog to reset device if WiFi connection was interrupted (see main function)
+int watchdog_counter = 0;
+
 #define RX_TASK_PRIO    9       // receiving task priority
 
 static const int uart_num = UART_NUM_2;
@@ -169,8 +172,8 @@ static void can_receive_task(void *arg)
                 }
                 update_mppt_received = true;
             }
-            /*
-            printf("CAN Message from node %u received. Data object 0x%.2x = 0x",
+
+            printf("CAN msg node %u, data object 0x%.2x = 0x",
                 node_id, data_object_id);
             if (!(message.flags & CAN_MSG_FLAG_RTR)) {
                 for (int i = 0; i < message.data_length_code; i++) {
@@ -178,7 +181,6 @@ static void can_receive_task(void *arg)
                 }
             }
             printf("\n");
-            */
         }
     }
 }
@@ -368,6 +370,8 @@ static int send_emoncms(struct addrinfo *res, const char *node_name, const char 
 
     ESP_LOGI(TAG, "... done reading from socket. Last read return=%d errno=%d\r\n", resp, errno);
     close(s);
+
+    watchdog_counter = 0;   // reset WiFi watchdog
     return 1;
 }
 
@@ -535,4 +539,13 @@ void app_main(void)
 
     initialise_wifi();
     xTaskCreate(&http_get_task, "http_get_task", 4096, NULL, 5, NULL);
+
+    while (1) {
+        if (watchdog_counter > 60) {
+            printf("Restarting ESP because of interrupted WiFi connection for 60s\n");
+            esp_restart();
+        }
+        watchdog_counter++;
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
 }
