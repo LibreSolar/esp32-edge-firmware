@@ -2,6 +2,8 @@
 
 Firmware for CAN and UART to WiFi or Bluetooth gateway based on ESP32-IDF.
 
+**Warning:** This firmware is at a very early stage. Expect bugs and report them in the issues :)
+
 ## Supported devices
 
 - Libre Solar [Data Manager](https://github.com/LibreSolar/data-manager)
