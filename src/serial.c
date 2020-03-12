@@ -91,4 +91,11 @@ void uart_rx_task(void *arg)
     }
 }
 
+#else
+
+char *get_serial_json_data()
+{
+    return "{}";
+}
+
 #endif /* UART */
