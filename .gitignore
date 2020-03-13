@@ -1,3 +1,11 @@
+
+# ESP-IDF build files and user configuration
+build
+sdkconfig*
+!sdkconfig.defaults
+
+# PlatformIO build files
 .pio
+
+# Other files and folders
 .vscode
-src/custom_conf.h

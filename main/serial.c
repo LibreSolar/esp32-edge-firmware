@@ -21,12 +21,13 @@
 #include "driver/uart.h"
 
 bool update_serial_received = false;
-char serial_json_buf[500];
+
+#if CONFIG_THINGSET_SERIAL
+
+static char serial_json_buf[500];
 
 static const int uart_num = UART_NUM_2;
 static const int UART_RX_BUF_SIZE = 1024;
-
-#if defined(GPIO_UART_RX) && defined(GPIO_UART_TX)
 
 char *get_serial_json_data()
 {
@@ -45,7 +46,8 @@ void uart_setup(void)
     ESP_ERROR_CHECK(
         uart_param_config(uart_num, &uart_config));
     ESP_ERROR_CHECK(
-        uart_set_pin(uart_num, GPIO_UART_TX, GPIO_UART_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+        uart_set_pin(uart_num, CONFIG_GPIO_UART_TX, CONFIG_GPIO_UART_RX,
+            UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(
         uart_driver_install(uart_num, UART_RX_BUF_SIZE * 2, 0, 0, NULL, 0));
 }
@@ -91,11 +93,11 @@ void uart_rx_task(void *arg)
     }
 }
 
-#else
+#else /* not CONFIG_THINGSET_SERIAL */
 
 char *get_serial_json_data()
 {
     return "{}";
 }
 
-#endif /* UART */
+#endif

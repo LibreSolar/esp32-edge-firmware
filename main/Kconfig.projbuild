@@ -1,0 +1,94 @@
+menu "Board Selection"
+
+    config GPIO_LED
+        int "GPIO pin of LED"
+        default 18
+
+    config THINGSET_CAN
+        bool "ThingSet CAN interface (LS.bus)"
+        default y
+
+    config GPIO_CAN_RX
+        int "GPIO pin of CAN RX"
+        depends on THINGSET_CAN
+        default 4
+
+    config GPIO_CAN_TX
+        int "GPIO pin of CAN TX"
+        depends on THINGSET_CAN
+        default 5
+
+    config GPIO_CAN_STB
+        int "GPIO pin of CAN standby"
+        depends on THINGSET_CAN
+        default 12
+
+    config THINGSET_SERIAL
+        bool "ThingSet serial interface (LS.one)"
+        default y
+
+    config GPIO_UART_RX
+        int "GPIO pin of UART RX"
+        depends on THINGSET_SERIAL
+        default 16
+
+    config GPIO_UART_TX
+        int "GPIO pin of UART TX"
+        depends on THINGSET_SERIAL
+        default 17
+
+endmenu
+
+menu "User Configuration"
+
+    config WIFI_SSID
+        string "WiFi SSID"
+        help
+            SSID (network name) for the example to connect to.
+
+    config WIFI_PASSWORD
+        string "WiFi password"
+        help
+            WiFi password (WPA or WPA2).
+            Can be left blank if the network has no security set.
+
+    config EMONCMS
+        bool "OpenEnergyMonitor Emoncms support"
+        default y
+
+    config EMONCMS_HOST
+        string "Hostname of Emoncms server"
+        depends on EMONCMS
+        default "emoncms.org"
+
+    config EMONCMS_PORT
+        string "Port of Emoncms server"
+        depends on EMONCMS
+        default "80"
+
+    config EMONCMS_URL
+        string "URL of Emoncms post API endpoint"
+        depends on EMONCMS
+        default "/emoncms/input/post"
+
+    config EMONCMS_APIKEY
+        string "API key for Emoncms access"
+        depends on EMONCMS
+        default ""
+
+    config EMONCMS_NODE_SERIAL
+        string "Node name of ThingSet device connected to serial"
+        depends on EMONCMS
+        default "serial"
+
+    config EMONCMS_NODE_MPPT
+        string "Node name of MPPT connected via CAN"
+        depends on EMONCMS
+        default "mppt"
+
+    config EMONCMS_NODE_BMS
+        string "Node name of BMS connected via CAN"
+        depends on EMONCMS
+        default "bms"
+
+endmenu

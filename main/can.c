@@ -21,19 +21,18 @@
 #include "driver/can.h"
 #include "driver/gpio.h"
 
-//#include "custom_conf.h"
+bool update_bms_received = false;
+bool update_mppt_received = false;
 
+#if CONFIG_THINGSET_CAN
 
 // buffer for JSON string generated from received data objects via CAN
 static char json_buf[500];
 
-bool update_bms_received = false;
-bool update_mppt_received = false;
-
 static const can_timing_config_t t_config = CAN_TIMING_CONFIG_250KBITS();
 static const can_filter_config_t f_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
 static const can_general_config_t g_config =
-    CAN_GENERAL_CONFIG_DEFAULT(GPIO_CAN_TX, GPIO_CAN_RX, CAN_MODE_NORMAL);
+    CAN_GENERAL_CONFIG_DEFAULT(CONFIG_GPIO_CAN_TX, CONFIG_GPIO_CAN_RX, CAN_MODE_NORMAL);
 
 DataObject data_obj_bms[] = {
     {0x70, "Bat_V",     {0}, 0},
@@ -176,15 +175,13 @@ char *get_bms_json_data()
     return json_buf;
 }
 
-#if defined(GPIO_CAN_RX) && defined(GPIO_CAN_TX)
-
 void can_setup()
 {
 #ifdef GPIO_CAN_STB
     // switch CAN transceiver on (STB = low)
-    gpio_pad_select_gpio(GPIO_CAN_STB);
-    gpio_set_direction(GPIO_CAN_STB, GPIO_MODE_OUTPUT);
-    gpio_set_level(GPIO_CAN_STB, 0);
+    gpio_pad_select_gpio(CONFIG_GPIO_CAN_STB);
+    gpio_set_direction(CONFIG_GPIO_CAN_STB, GPIO_MODE_OUTPUT);
+    gpio_set_level(CONFIG_GPIO_CAN_STB, 0);
 #endif
 
     if (can_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
@@ -250,4 +247,16 @@ void can_receive_task(void *arg)
     }
 }
 
-#endif /* CAN */
+#else /* not CONFIG_THINGSET_CAN */
+
+char *get_mppt_json_data()
+{
+    return "{}";
+}
+
+char *get_bms_json_data()
+{
+    return "{}";
+}
+
+#endif

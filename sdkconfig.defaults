@@ -1,0 +1,17 @@
+
+# Most boards have 40 MHz XTAL frequency, but e.g. ESP32thing has 26 MHz. Auto supports all boards.
+CONFIG_ESP32_XTAL_FREQ_AUTO=y
+
+# WiFi settings
+CONFIG_WIFI_SSID="your-ssid"
+CONFIG_WIFI_PASSWORD="your-password"
+
+# OpenEnergyMonitor Emoncms
+CONFIG_EMONCMS=y
+CONFIG_EMONCMS_HOST="emoncms.org"
+CONFIG_EMONCMS_PORT="80"
+CONFIG_EMONCMS_URL="/emoncms/input/post"
+CONFIG_EMONCMS_APIKEY="your-api-code"
+CONFIG_EMONCMS_NODE_MPPT="mppt"
+CONFIG_EMONCMS_NODE_BMS="bms"
+CONFIG_EMONCMS_NODE_SERIAL="serial"

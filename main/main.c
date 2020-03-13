@@ -14,7 +14,7 @@
 
 #include "esp_system.h"
 #include "esp_wifi.h"
-#include "esp_event_loop.h"
+#include "esp_event.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
@@ -29,7 +29,6 @@
 
 #include "serial.h"
 #include "can.h"
-#include "custom_conf.h"
 
 // simple watchdog to reset device if WiFi connection was interrupted (see main function)
 int watchdog_counter = 0;
@@ -94,9 +93,9 @@ static int send_emoncms(struct addrinfo *res, const char *node_name, const char 
     char recv_buf[64];
 
     const char *http_header =
-        "POST " EMONCMS_URL " HTTP/1.1\r\n"
-        "Host: " EMONCMS_HOST "\r\n"
-        "Authorization: " EMONCMS_APIKEY "\r\n"
+        "POST " CONFIG_EMONCMS_URL " HTTP/1.1\r\n"
+        "Host: " CONFIG_EMONCMS_HOST "\r\n"
+        "Authorization: " CONFIG_EMONCMS_APIKEY "\r\n"
         "User-Agent: esp-idf/1.0 esp32\r\n"
         "Content-Type: application/x-www-form-urlencoded\r\n"
         "Connection: close\r\n";
@@ -171,7 +170,7 @@ static void http_get_task(void *arg)
         xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
         ESP_LOGI(TAG, "Connected to AP");
 
-        int err = getaddrinfo(EMONCMS_HOST, EMONCMS_PORT, &hints, &res);
+        int err = getaddrinfo(CONFIG_EMONCMS_HOST, CONFIG_EMONCMS_PORT, &hints, &res);
 
         if (err != 0 || res == NULL) {
             ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
@@ -185,32 +184,32 @@ static void http_get_task(void *arg)
         ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
 
         if (update_bms_received) {
-            gpio_set_level(GPIO_LED, 0);
-            send_emoncms(res, EMONCMS_NODE_BMS, get_bms_json_data());
+            gpio_set_level(CONFIG_GPIO_LED, 0);
+            send_emoncms(res, CONFIG_EMONCMS_NODE_BMS, get_bms_json_data());
             update_bms_received = false;
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
-        gpio_set_level(GPIO_LED, 1);
+        gpio_set_level(CONFIG_GPIO_LED, 1);
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
 
         if (update_mppt_received) {
-            gpio_set_level(GPIO_LED, 0);
-            send_emoncms(res, EMONCMS_NODE_MPPT, get_mppt_json_data());
+            gpio_set_level(CONFIG_GPIO_LED, 0);
+            send_emoncms(res, CONFIG_EMONCMS_NODE_MPPT, get_mppt_json_data());
             update_mppt_received = false;
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
-        gpio_set_level(GPIO_LED, 1);
+        gpio_set_level(CONFIG_GPIO_LED, 1);
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
 
         if (update_serial_received) {
-            gpio_set_level(GPIO_LED, 0);
-            send_emoncms(res, EMONCMS_NODE_SERIAL, get_serial_json_data());
+            gpio_set_level(CONFIG_GPIO_LED, 0);
+            send_emoncms(res, CONFIG_EMONCMS_NODE_SERIAL, get_serial_json_data());
             update_serial_received = false;
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
-        gpio_set_level(GPIO_LED, 1);
+        gpio_set_level(CONFIG_GPIO_LED, 1);
 
         // sending interval almost 10s
         vTaskDelay(8000 / portTICK_PERIOD_MS);
@@ -224,19 +223,19 @@ void app_main(void)
     nvs_flash_init();
 
     // configure the LED pad as GPIO and set direction
-    gpio_pad_select_gpio(GPIO_LED);
-    gpio_set_direction(GPIO_LED, GPIO_MODE_OUTPUT);
-    gpio_set_level(GPIO_LED, 1);
+    gpio_pad_select_gpio(CONFIG_GPIO_LED);
+    gpio_set_direction(CONFIG_GPIO_LED, GPIO_MODE_OUTPUT);
+    gpio_set_level(CONFIG_GPIO_LED, 1);
 
     vTaskDelay(1000 / portTICK_PERIOD_MS);
  	printf("Booting Libre Solar Data Manager...\n");
 
-#if defined(GPIO_CAN_RX) && defined(GPIO_CAN_TX)
+#if CONFIG_THINGSET_CAN
     can_setup();
     xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096, NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
 #endif
 
-#if defined(GPIO_UART_RX) && defined(GPIO_UART_TX)
+#if CONFIG_THINGSET_SERIAL
     uart_setup();
     xTaskCreatePinnedToCore(uart_rx_task, "UART_rx", 4096, NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
 #endif

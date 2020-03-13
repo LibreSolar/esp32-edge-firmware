@@ -1,6 +1,6 @@
 # Libre Solar Data Manager Firmware
 
-Firmware for CAN and UART to WiFi or Bluetooth gateway based on ESP32-IDF.
+Firmware for CAN and UART to WiFi or Bluetooth gateway based on ESP32-IDF v4.0.
 
 **Warning:** This firmware is at a very early stage. Expect bugs and report them in the issues :)
 
@@ -23,6 +23,23 @@ Firmware for CAN and UART to WiFi or Bluetooth gateway based on ESP32-IDF.
 
 ## Usage
 
-This firmware uses PlatformIO for easy bulding and flashing. Before you can compile, you need to
-copy the `custom_conf.template.h` to `custom_conf.h` and adjust WiFi and EmonCMS settings
-accordingly.
+### ESP-IDF toolchain
+
+The ESP-IDF is the native toolchain for ESP32 microcontrollers by Espressif. Follow [this guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html#) to install it.
+
+After installation run the following commands:
+
+    idf.py build            # compile the firmware
+    idf.py flash            # flash it to the device
+
+### PlatformIO
+
+You can use PlatformIO for easy bulding and flashing. Currently, ESP-IDF 4.0 support is still in beta phase, so it might not work out of the box. However, the setup in `platformio.ini` was adjusted to support the new ESP-IDF already.
+
+### Configuration
+
+The firmware is configured using Kconfig integrated into ESP-IDF.
+
+The most convenient way is to run `idf.py menuconfig` after the ESP-IDF was successfully installed. If ESP-IDF is not available and PlatformIO is used, configuration can be changed manually in the generated `sdkconfig` file.
+
+WiFi credentials are currently hard-coded and are also set as Kconfig parameters.
