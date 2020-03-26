@@ -85,6 +85,7 @@ esp_err_t wifi_connect(void)
 #ifdef CONFIG_CONNECT_IPV6
     ESP_LOGI(TAG, "IPv6 address: " IPV6STR, IPV62STR(s_ipv6_addr));
 #endif
+
     return ESP_OK;
 }
 
@@ -145,6 +146,9 @@ static void start(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+
+    ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, CONFIG_DEVICE_HOSTNAME));
+
     ESP_ERROR_CHECK(esp_wifi_connect());
     s_connection_name = CONFIG_WIFI_SSID;
 }

@@ -52,6 +52,13 @@ menu "User Configuration"
             WiFi password (WPA or WPA2).
             Can be left blank if the network has no security set.
 
+    config DEVICE_HOSTNAME
+        string "Device host name"
+        default "data-manager"
+        help
+            Specify the default host name for this device. It shall be user-configurable in
+            the future.
+
     config EMONCMS
         bool "OpenEnergyMonitor Emoncms support"
         default y
