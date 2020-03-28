@@ -32,6 +32,7 @@
 #include "emoncms.h"
 #include "serial.h"
 #include "wifi.h"
+#include "web_fs.h"
 
 #define RX_TASK_PRIO    9       // receiving task priority
 
@@ -46,22 +47,28 @@ void app_main(void)
     gpio_set_direction(CONFIG_GPIO_LED, GPIO_MODE_OUTPUT);
     gpio_set_level(CONFIG_GPIO_LED, 1);
 
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    // wait 3s to open serial terminal after flashing finished
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
  	printf("Booting Libre Solar Data Manager...\n");
+
+    init_fs();
 
 #if CONFIG_THINGSET_CAN
     can_setup();
-    xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096, NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096,
+        NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
 #endif
 
 #if CONFIG_THINGSET_SERIAL
     uart_setup();
-    xTaskCreatePinnedToCore(uart_rx_task, "UART_rx", 4096, NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(uart_rx_task, "UART_rx", 4096,
+        NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
 #endif
 
     wifi_connect();
 
 #if CONFIG_EMONCMS
-    xTaskCreate(&emoncms_post_task, "emoncms_post_task", 4096, NULL, 5, NULL);
+    xTaskCreate(&emoncms_post_task, "emoncms_post_task", 4096,
+        NULL, 5, NULL);
 #endif
 }

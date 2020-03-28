@@ -2,6 +2,10 @@
 # Most boards have 40 MHz XTAL frequency, but e.g. ESP32thing has 26 MHz. Auto supports all boards.
 CONFIG_ESP32_XTAL_FREQ_AUTO=y
 
+# Partition table with SPIFFS
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
 # WiFi settings
 CONFIG_WIFI_SSID="your-ssid"
 CONFIG_WIFI_PASSWORD="your-password"
