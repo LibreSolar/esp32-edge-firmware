@@ -6,6 +6,7 @@ set(app_sources
 	"emoncms.c"
 	"wifi.c"
 	"web_fs.c"
+	"web_server.c"
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS ".")

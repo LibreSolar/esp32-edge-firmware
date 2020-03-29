@@ -33,6 +33,7 @@
 #include "serial.h"
 #include "wifi.h"
 #include "web_fs.h"
+#include "web_server.h"
 
 #define RX_TASK_PRIO    9       // receiving task priority
 
@@ -66,6 +67,8 @@ void app_main(void)
 #endif
 
     wifi_connect();
+
+    start_web_server("/www");
 
 #if CONFIG_EMONCMS
     xTaskCreate(&emoncms_post_task, "emoncms_post_task", 4096,
