@@ -1,0 +1,101 @@
+{
+    "info": {
+        "DeviceID": "abcd1234",
+        "Manufacturer": "Libre Solar Technologies GmbH",
+        "DeviceType": "MPPT 1210 HUS",
+        "HardwareVersion": "0.7.1",
+        "FirmwareVersion": "19.1",
+        "FirmwareCommit": "91d4ec44243e08c39c9bc559be5502534652f398"
+    },
+    "conf": {
+        "BatNom_Ah": 40,
+        "BatRecharge_V": 13.4,
+        "BatAbsMin_V": 9.0,
+        "BatChgMax_A": 40,
+        "BatTarget_V": 14.4,
+        "BatCutoff_A": 1.0,
+        "BatCutoff_s": 3600,
+        "TrickleEn": true,
+        "Trickle_V": 13.8,
+        "TrickleRecharge_s": 3600,
+        "TempFactor": 3,
+        "BatInt_Ohm": 0.05,
+        "BatWire_Ohm": 0,
+        "BatChgMax_degC": 40,
+        "BatChgMin_degC": 0,
+        "BatDisMax_degC": 60,
+        "BatDisMin_degC": -10,
+        "EqEn": false,
+        "Eq_V": 14.8,
+        "Eq_A": 2.0,
+        "EqDuration_s": 1800,
+        "EqInterval_d": 8,
+        "EqDeepDisTrigger": 10,
+        "LoadEnDefault": true,
+        "UsbEnDefault": true,
+        "LoadDisconnect_V": 10.8,
+        "LoadReconnect_V": 11.7,
+        "UsbDisconnect_V": 10.8,
+        "UsbReconnect_V": 11.7,
+        "LoadOCRecovery_s": 60,
+        "LoadUVRecovery_s": 10,
+        "UsbUVRecovery_s": 10
+    },
+    "input": {
+        "LoadEn": true,
+        "DcdcEn": true,
+        "UsbEn": false
+    },
+    "output": {
+        "LoadInfo": 1,
+        "UsbInfo": 1,
+        "SOC_%": 0.17,
+        "Bat_V": 12.78,
+        "Solar_V": 31.4,
+        "Bat_A": 2.52,
+        "Load_A": 1.39,
+        "Bat_degC": 22.3,
+        "BatTempExt": false,
+        "Int_degC": 28.1,
+        "Mosfet_degC": 42.1,
+        "ChgState": 2,
+        "DCDCState": 1,
+        "Solar_A": 0.58,
+        "BatTarget_V": 14.4,
+        "BatTarget_A": 2.0,
+        "Bat_W": 53,
+        "Solar_W": 94,
+        "Load_W": 15,
+        "NumBatteries": 1,
+        "ErrorFlags": 0
+    },
+    "exec": {
+        "Reset": null,
+        "Auth": "secret"
+    },
+    "pub": {
+        "serial": {
+            "enable": true,
+            "interval": 1.0,
+            "ids": ["Bat_V", "Bat_A"]
+        },
+        "can": {
+            "enable": false,
+            "interval": 0.1,
+            "ids": ["Test"]
+        }
+    },
+    "log": {
+        "daily": {
+            "23094834": {"Bat_kWh":123,"Solar_kWh":456},
+            "34209348": {"Bat_kWh":151,"Solar_kWh":531}
+        },
+        "hourly": {
+            "3093453": {"other":1,"data_objects":2}
+        }
+    },
+    "nodes": {
+        "abcd1234": "MPPT 1210 HUS",
+        "efgh5678": "BMS 8S50 IC"
+    }
+}
