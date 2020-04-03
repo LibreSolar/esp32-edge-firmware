@@ -33,14 +33,10 @@
 </template>
 
 <script>
-
 export default {
   data() {
     return {
-      data_objects: null,
-      red: 160,
-      green: 160,
-      blue: 160
+      data_objects: null
     }
   },
   mounted() {
@@ -68,9 +64,6 @@ export default {
           console.log(error);
         });
     }
-  },
-  components: {
-    DataObject
   }
 };
 </script>
