@@ -22,7 +22,21 @@ Firmware for CAN and UART to WiFi or Bluetooth gateway based on ESP32-IDF v4.0.
 - Data logging on SD card (ToDo)
 
 ## Usage
+### Build the Webapp
 
+To be able to build the data-manager-firmware you need to build the webapp first.
+To do so, go into the webapp folder
+
+```
+    cd data-manager-firmware/webapp
+```
+and run
+
+```
+    npm install
+    npm run build
+```
+you are now able to build the firmware itself.
 ### ESP-IDF toolchain
 
 The ESP-IDF is the native toolchain for ESP32 microcontrollers by Espressif. Follow [this guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html#) to install it.
