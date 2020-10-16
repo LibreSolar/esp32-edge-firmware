@@ -20,7 +20,8 @@
 
 #include "driver/uart.h"
 
-bool update_serial_received = false;
+bool pub_serial_received = false;
+bool resp_serial_received = false;
 
 #if CONFIG_THINGSET_SERIAL
 
@@ -56,41 +57,61 @@ void uart_rx_task(void *arg)
 {
     uint8_t data[UART_RX_BUF_SIZE];
     int pos = 0;        // stores next free position for incoming characters
-    bool buffer_full = false;
 
     while (1) {
-        const int len = uart_read_bytes(UART_NUM_2,
-            &data[pos], sizeof(data) - pos - 1, 20 / portTICK_RATE_MS);
+        const int len = uart_read_bytes(uart_num, &data[pos], 1, 20 / portTICK_RATE_MS);
 
-        for (int i = 0; i < len; i++) {
-            if (data[pos] == '\r' || data[pos] == '\n') {
-                if (!buffer_full) {  // only start processing if all characters till end of line were received
-                    if (data[0] == '#' && data[1] == ' ' && pos > 2) {
-                        data[pos] = '\0';
-                        //printf("Received pub msg with %d bytes: %s\n", pos, &data[2]);
-                        int len_json = strlen((char *)&data[2]);
-                        if (update_serial_received == false && len_json < sizeof(serial_json_buf) - 1) {
-                            // copy json string
-                            strncpy(serial_json_buf, (char *)&data[2], len_json);
-                            serial_json_buf[len_json] = '\0';
-                            update_serial_received = true;
-                        }
-                    }
-                }
-                else {
-                    // reset and start from beginning
-                    buffer_full = false;
-                }
-                pos = 0;
-            }
-            else if (pos >= sizeof(data) - 1) {   // last position necessary for null-termination
-                buffer_full = true;
+        if (len != 1) {
+            continue;
+        }
+
+        // \r\n and \n are markers for line end, i.e. command end
+        // we accept this at any time, even if the buffer is 'full', since
+        // there is always one last character left for the \0
+        if (data[pos] == '\n') {
+            if (pos > 0 && data[pos-1] == '\r') {
+                data[pos-1] = '\0';
             }
             else {
-                pos++;
+                data[pos] = '\0';
             }
+            // start processing
+            ESP_LOGI("serial", "%s", data);
+            if (data[0] == '#' && data[1] == ' ' && pos > 2) {
+                //printf("Received pub msg with %d bytes: %s\n", pos, &data[2]);
+                int len_json = strlen((char *)&data[2]);
+                if (pub_serial_received == false && len_json < sizeof(serial_json_buf) - 1) {
+                    // copy json string
+                    strncpy(serial_json_buf, (char *)&data[2], len_json);
+                    serial_json_buf[len_json] = '\0';
+                    pub_serial_received = true;
+                }
+            }
+            else if (data[0] == ':') {
+            //else if (strstr((char *)data, ":85 Content. ") == data) {
+                ESP_LOGI("serial", "Received response with %d bytes: %s\n", pos, &data[2]);
+                int len_json = strlen((char *)&data[13]);
+                if (resp_serial_received == false && len_json < sizeof(serial_json_buf) - 2) {
+                    // copy json string
+                    strncpy(serial_json_buf, (char *)&data[13], len_json);
+                    serial_json_buf[len_json] = '\n';
+                    serial_json_buf[len_json + 1] = '\0';
+                    resp_serial_received = true;
+                }
+            }
+            pos = 0;
+        }
+        // Fill the buffer up to all but 1 character (the last character is reserved for '\0')
+        // Characters beyond the size of the buffer are dropped.
+        else if (pos < (sizeof(data) - 1)) {
+            pos++;
         }
     }
+}
+
+void uart_send(char *req)
+{
+    uart_write_bytes(uart_num, req, strlen(req));
 }
 
 #else /* not CONFIG_THINGSET_SERIAL */

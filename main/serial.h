@@ -6,7 +6,8 @@
 
 #include <stdbool.h>
 
-extern bool update_serial_received;
+extern bool pub_serial_received;
+extern bool resp_serial_received;
 
 /**
  * Initiate the UART interface.
@@ -17,6 +18,8 @@ void uart_setup(void);
  * Thread listening to UART interface, needs to be spawned from main.
  */
 void uart_rx_task(void *arg);
+
+void uart_send(char *req);
 
 /**
  * Get data received from UART interface in JSON format

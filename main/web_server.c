@@ -11,6 +11,9 @@
 #include "esp_log.h"
 #include "esp_vfs.h"
 #include "cJSON.h"
+#include <sys/param.h>
+
+#include "serial.h"
 
 static const char *REST_TAG = "esp-rest";
 #define REST_CHECK(a, str, goto_tag, ...)                                              \
@@ -142,16 +145,69 @@ static esp_err_t light_brightness_post_handler(httpd_req_t *req)
 /* Simple handler for getting system handler */
 static esp_err_t json_data_get_handler(httpd_req_t *req)
 {
+    char ts_req[300];
+
     httpd_resp_set_type(req, "application/json");
-    cJSON *root = cJSON_CreateObject();
-    esp_chip_info_t chip_info;
-    esp_chip_info(&chip_info);
-    cJSON_AddStringToObject(root, "version", IDF_VER);
-    cJSON_AddNumberToObject(root, "cores", chip_info.cores);
-    const char *sys_info = cJSON_Print(root);
-    httpd_resp_sendstr(req, sys_info);
-    free((void *)sys_info);
-    cJSON_Delete(root);
+
+    resp_serial_received = false;
+
+    ESP_LOGI(REST_TAG, "URI: %s", req->uri);
+    ESP_LOGI(REST_TAG, "Method: %d", req->method);
+
+    switch (req->method) {
+        case HTTP_GET:
+            ts_req[0] = '?';
+            break;
+        case HTTP_POST:
+            ts_req[0] = '!';
+            break;
+        case HTTP_PATCH:
+            ts_req[0] = '=';
+            break;
+        case HTTP_DELETE:
+            ts_req[0] = '-';
+            break;
+        default:
+            ts_req[0] = '\0';   // empty string
+    }
+
+    int pos_function = strlen("/devices/serial/");
+    int len_function = strlen(req->uri) - pos_function;
+    if (len_function > 0 && len_function < sizeof(ts_req) - 3) {
+        strncpy(&ts_req[1], req->uri + pos_function, sizeof(ts_req) - 3);
+
+        /* Truncate if content length larger than the buffer */
+        size_t recv_size = MIN(req->content_len, sizeof(ts_req) - len_function - 3);
+
+        int ret =  httpd_req_recv(req, &ts_req[len_function + 2], recv_size);
+        if (ret > 0) {
+            ts_req[len_function + 1] = ' ';
+            ts_req[len_function + 2 + ret] = '\n';
+            ts_req[len_function + 3 + ret] = '\0';
+        }
+        else if (ret == 0) {
+            ts_req[len_function + 1] = '\n';
+            ts_req[len_function + 2] = '\0';
+        }
+    }
+    ESP_LOGI(REST_TAG, "Sending: %s", ts_req);
+
+    uart_send(ts_req);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+
+    if (resp_serial_received) {
+        if (req->method == HTTP_GET) {
+            httpd_resp_sendstr(req, get_serial_json_data());
+        }
+        else {
+            httpd_resp_set_status(req, "204 No Content");
+            httpd_resp_sendstr(req, "");
+        }
+    }
+    else {
+        httpd_resp_sendstr(req, "ERROR");
+    }
+
     return ESP_OK;
 }
 
@@ -171,12 +227,28 @@ esp_err_t start_web_server(const char *base_path)
 
     /* URI handler for fetching JSON data */
     httpd_uri_t json_data_get_uri = {
-        .uri = "/api/v1/system/info",
+        .uri = "/devices/*",
         .method = HTTP_GET,
         .handler = json_data_get_handler,
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &json_data_get_uri);
+
+    httpd_uri_t json_data_patch_uri = {
+        .uri = "/devices/*",
+        .method = HTTP_PATCH,
+        .handler = json_data_get_handler,
+        .user_ctx = server_ctx
+    };
+    httpd_register_uri_handler(server, &json_data_patch_uri);
+
+    httpd_uri_t json_data_post_uri = {
+        .uri = "/devices/*",
+        .method = HTTP_POST,
+        .handler = json_data_get_handler,
+        .user_ctx = server_ctx
+    };
+    httpd_register_uri_handler(server, &json_data_post_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {
