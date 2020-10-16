@@ -31,6 +31,8 @@
 #include "can.h"
 #include "wifi.h"
 
+#if CONFIG_EMONCMS
+
 static const char* TAG = "emoncms";
 
 static int send_emoncms(struct addrinfo *res, const char *node_name, const char *json_str)
@@ -164,7 +166,4 @@ void emoncms_post_task(void *arg)
     }
 }
 
-
-
-
-
+#endif // CONFIG_EMONCMS
