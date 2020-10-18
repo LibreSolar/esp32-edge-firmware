@@ -9,22 +9,14 @@
 #include "esp_http_server.h"
 #include "esp_system.h"
 #include "esp_log.h"
+#include "esp_err.h"
 #include "esp_vfs.h"
 #include "cJSON.h"
 #include <sys/param.h>
 
-#include "serial.h"
+#include "ts_serial.h"
 
-static const char *REST_TAG = "esp-rest";
-#define REST_CHECK(a, str, goto_tag, ...)                                              \
-    do                                                                                 \
-    {                                                                                  \
-        if (!(a))                                                                      \
-        {                                                                              \
-            ESP_LOGE(REST_TAG, "%s(%d): " str, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
-            goto goto_tag;                                                             \
-        }                                                                              \
-    } while (0)
+static const char *TAG = "websrv";
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
 #define SCRATCH_BUFSIZE (10240)
@@ -72,7 +64,7 @@ static esp_err_t common_get_handler(httpd_req_t *req)
     }
     int fd = open(filepath, O_RDONLY, 0);
     if (fd == -1) {
-        ESP_LOGE(REST_TAG, "Failed to open file : %s", filepath);
+        ESP_LOGE(TAG, "Failed to open file : %s", filepath);
         /* Respond with 500 Internal Server Error */
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
         return ESP_FAIL;
@@ -86,13 +78,13 @@ static esp_err_t common_get_handler(httpd_req_t *req)
         /* Read file in chunks into the scratch buffer */
         read_bytes = read(fd, chunk, SCRATCH_BUFSIZE);
         if (read_bytes == -1) {
-            ESP_LOGE(REST_TAG, "Failed to read file : %s", filepath);
+            ESP_LOGE(TAG, "Failed to read file : %s", filepath);
         }
         else if (read_bytes > 0) {
             /* Send the buffer contents as HTTP response chunk */
             if (httpd_resp_send_chunk(req, chunk, read_bytes) != ESP_OK) {
                 close(fd);
-                ESP_LOGE(REST_TAG, "File sending failed!");
+                ESP_LOGE(TAG, "File sending failed!");
                 /* Abort sending file */
                 httpd_resp_sendstr_chunk(req, NULL);
                 /* Respond with 500 Internal Server Error */
@@ -103,7 +95,7 @@ static esp_err_t common_get_handler(httpd_req_t *req)
     } while (read_bytes > 0);
     /* Close file after sending complete */
     close(fd);
-    ESP_LOGI(REST_TAG, "File sending complete");
+    ESP_LOGI(TAG, "File sending complete");
     /* Respond with an empty chunk to signal HTTP response completion */
     httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
@@ -136,7 +128,7 @@ static esp_err_t light_brightness_post_handler(httpd_req_t *req)
     int red = cJSON_GetObjectItem(root, "red")->valueint;
     int green = cJSON_GetObjectItem(root, "green")->valueint;
     int blue = cJSON_GetObjectItem(root, "blue")->valueint;
-    ESP_LOGI(REST_TAG, "Light control: red = %d, green = %d, blue = %d", red, green, blue);
+    ESP_LOGI(TAG, "Light control: red = %d, green = %d, blue = %d", red, green, blue);
     cJSON_Delete(root);
     httpd_resp_sendstr(req, "Post control value successfully");
     return ESP_OK;
@@ -149,10 +141,7 @@ static esp_err_t json_data_get_handler(httpd_req_t *req)
 
     httpd_resp_set_type(req, "application/json");
 
-    resp_serial_received = false;
-
-    ESP_LOGI(REST_TAG, "URI: %s", req->uri);
-    ESP_LOGI(REST_TAG, "Method: %d", req->method);
+    ESP_LOGI(TAG, "URI: %s", req->uri);
 
     switch (req->method) {
         case HTTP_GET:
@@ -190,14 +179,15 @@ static esp_err_t json_data_get_handler(httpd_req_t *req)
             ts_req[len_function + 2] = '\0';
         }
     }
-    ESP_LOGI(REST_TAG, "Sending: %s", ts_req);
 
-    uart_send(ts_req);
-    vTaskDelay(200 / portTICK_PERIOD_MS);
+    if (ts_serial_request(ts_req, 100) != ESP_OK) {
+        return ESP_FAIL;
+    }
 
-    if (resp_serial_received) {
+    char *resp = ts_serial_response(200);
+    if (resp) {
         if (req->method == HTTP_GET) {
-            httpd_resp_sendstr(req, get_serial_json_data());
+            httpd_resp_sendstr(req, resp);
         }
         else {
             httpd_resp_set_status(req, "204 No Content");
@@ -208,22 +198,36 @@ static esp_err_t json_data_get_handler(httpd_req_t *req)
         httpd_resp_sendstr(req, "ERROR");
     }
 
+    ts_serial_response_clear();
+
     return ESP_OK;
 }
 
 esp_err_t start_web_server(const char *base_path)
 {
-    REST_CHECK(base_path, "wrong base path", err);
+    if (base_path == NULL) {
+        ESP_LOGE(TAG, "Wrong base path");
+        return ESP_FAIL;
+    }
+
     web_server_context_t *server_ctx = calloc(1, sizeof(web_server_context_t));
-    REST_CHECK(server_ctx, "No memory for rest context", err);
+    if (server_ctx == NULL) {
+        ESP_LOGE(TAG, "No memory for web server");
+        return ESP_FAIL;
+    }
     strlcpy(server_ctx->base_path, base_path, sizeof(server_ctx->base_path));
 
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
 
-    ESP_LOGI(REST_TAG, "Starting HTTP Server");
-    REST_CHECK(httpd_start(&server, &config) == ESP_OK, "Start server failed", err_start);
+    ESP_LOGI(TAG, "Starting HTTP Server");
+
+    if (httpd_start(&server, &config) != ESP_OK) {
+        ESP_LOGE(TAG, "Start server failed");
+        free(server_ctx);
+        return ESP_FAIL;
+    }
 
     /* URI handler for fetching JSON data */
     httpd_uri_t json_data_get_uri = {
@@ -260,8 +264,4 @@ esp_err_t start_web_server(const char *base_path)
     httpd_register_uri_handler(server, &common_get_uri);
 
     return ESP_OK;
-err_start:
-    free(server_ctx);
-err:
-    return ESP_FAIL;
 }

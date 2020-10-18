@@ -28,9 +28,9 @@
 #include "lwip/netdb.h"
 #include "lwip/dns.h"
 
+#include "ts_serial.h"
 #include "can.h"
 #include "emoncms.h"
-#include "serial.h"
 #include "wifi.h"
 #include "web_fs.h"
 #include "web_server.h"
@@ -61,8 +61,8 @@ void app_main(void)
 #endif
 
 #if CONFIG_THINGSET_SERIAL
-    uart_setup();
-    xTaskCreatePinnedToCore(uart_rx_task, "UART_rx", 4096,
+    ts_serial_setup();
+    xTaskCreatePinnedToCore(ts_serial_rx_task, "ts_serial_rx", 4096,
         NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
 #endif
 

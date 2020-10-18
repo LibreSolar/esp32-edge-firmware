@@ -1,8 +1,8 @@
 
 set(app_sources
-	"can.c"
 	"main.c"
-	"serial.c"
+	"ts_serial.c"
+	"can.c"
 	"emoncms.c"
 	"wifi.c"
 	"web_fs.c"

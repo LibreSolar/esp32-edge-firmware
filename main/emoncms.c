@@ -27,7 +27,7 @@
 #include "lwip/netdb.h"
 #include "lwip/dns.h"
 
-#include "serial.h"
+#include "ts_serial.h"
 #include "can.h"
 #include "wifi.h"
 
@@ -109,8 +109,8 @@ void emoncms_post_task(void *arg)
 
         // wait until we receive an update
         while (update_bms_received == false &&
-               update_mppt_received == false &&
-               pub_serial_received == false)
+               update_mppt_received == false/* &&
+               pub_serial_received == false*/)
         {
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
@@ -150,7 +150,7 @@ void emoncms_post_task(void *arg)
         gpio_set_level(CONFIG_GPIO_LED, 1);
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
-
+/*
         if (pub_serial_received) {
             gpio_set_level(CONFIG_GPIO_LED, 0);
             send_emoncms(res, CONFIG_EMONCMS_NODE_SERIAL, get_serial_json_data());
@@ -158,7 +158,7 @@ void emoncms_post_task(void *arg)
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
         gpio_set_level(CONFIG_GPIO_LED, 1);
-
+*/
         // sending interval almost 10s
         vTaskDelay(8000 / portTICK_PERIOD_MS);
 
