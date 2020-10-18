@@ -1,6 +1,7 @@
 
 set(app_sources
 	"main.c"
+	"ts_client.c"
 	"ts_serial.c"
 	"can.c"
 	"emoncms.c"

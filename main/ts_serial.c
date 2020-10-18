@@ -175,7 +175,6 @@ int ts_serial_request(char *req, int timeout_ms)
     }
 
     xEventGroupSetBits(events, FLAG_AWAITING_RESPONSE);
-
     uart_write_bytes(uart_num, req, strlen(req));
 
     return ESP_OK;

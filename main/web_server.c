@@ -15,6 +15,7 @@
 #include <sys/param.h>
 
 #include "ts_serial.h"
+#include "ts_client.h"
 
 static const char *TAG = "websrv";
 
@@ -66,7 +67,7 @@ static esp_err_t common_get_handler(httpd_req_t *req)
     if (fd == -1) {
         ESP_LOGE(TAG, "Failed to open file : %s", filepath);
         /* Respond with 500 Internal Server Error */
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file.\n");
         return ESP_FAIL;
     }
 
@@ -88,7 +89,7 @@ static esp_err_t common_get_handler(httpd_req_t *req)
                 /* Abort sending file */
                 httpd_resp_sendstr_chunk(req, NULL);
                 /* Respond with 500 Internal Server Error */
-                httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
+                httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file.\n");
                 return ESP_FAIL;
             }
         }
@@ -101,83 +102,20 @@ static esp_err_t common_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-/* Simple handler for light brightness control */
-static esp_err_t light_brightness_post_handler(httpd_req_t *req)
+static esp_err_t ts_get_handler(httpd_req_t *req)
 {
-    int total_len = req->content_len;
-    int cur_len = 0;
-    char *buf = ((web_server_context_t *)(req->user_ctx))->scratch;
-    int received = 0;
-    if (total_len >= SCRATCH_BUFSIZE) {
-        /* Respond with 500 Internal Server Error */
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
-        return ESP_FAIL;
-    }
-    while (cur_len < total_len) {
-        received = httpd_req_recv(req, buf + cur_len, total_len);
-        if (received <= 0) {
-            /* Respond with 500 Internal Server Error */
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to post control value");
-            return ESP_FAIL;
-        }
-        cur_len += received;
-    }
-    buf[total_len] = '\0';
-
-    cJSON *root = cJSON_Parse(buf);
-    int red = cJSON_GetObjectItem(root, "red")->valueint;
-    int green = cJSON_GetObjectItem(root, "green")->valueint;
-    int blue = cJSON_GetObjectItem(root, "blue")->valueint;
-    ESP_LOGI(TAG, "Light control: red = %d, green = %d, blue = %d", red, green, blue);
-    cJSON_Delete(root);
-    httpd_resp_sendstr(req, "Post control value successfully");
-    return ESP_OK;
-}
-
-/* Simple handler for getting system handler */
-static esp_err_t json_data_get_handler(httpd_req_t *req)
-{
-    char ts_req[300];
+    char ts_req[100];
 
     httpd_resp_set_type(req, "application/json");
 
-    ESP_LOGI(TAG, "URI: %s", req->uri);
+    int pos = ts_req_hdr_from_http(ts_req, sizeof(ts_req), req->method, req->uri);
 
-    switch (req->method) {
-        case HTTP_GET:
-            ts_req[0] = '?';
-            break;
-        case HTTP_POST:
-            ts_req[0] = '!';
-            break;
-        case HTTP_PATCH:
-            ts_req[0] = '=';
-            break;
-        case HTTP_DELETE:
-            ts_req[0] = '-';
-            break;
-        default:
-            ts_req[0] = '\0';   // empty string
+    if (pos > 0 && pos < sizeof(ts_req) - 2) {
+        ts_req[pos] = '\n';
+        ts_req[pos + 1] = '\0';
     }
-
-    int pos_function = strlen("/devices/serial/");
-    int len_function = strlen(req->uri) - pos_function;
-    if (len_function > 0 && len_function < sizeof(ts_req) - 3) {
-        strncpy(&ts_req[1], req->uri + pos_function, sizeof(ts_req) - 3);
-
-        /* Truncate if content length larger than the buffer */
-        size_t recv_size = MIN(req->content_len, sizeof(ts_req) - len_function - 3);
-
-        int ret =  httpd_req_recv(req, &ts_req[len_function + 2], recv_size);
-        if (ret > 0) {
-            ts_req[len_function + 1] = ' ';
-            ts_req[len_function + 2 + ret] = '\n';
-            ts_req[len_function + 3 + ret] = '\0';
-        }
-        else if (ret == 0) {
-            ts_req[len_function + 1] = '\n';
-            ts_req[len_function + 2] = '\0';
-        }
+    else {
+        return ESP_FAIL;
     }
 
     if (ts_serial_request(ts_req, 100) != ESP_OK) {
@@ -186,16 +124,59 @@ static esp_err_t json_data_get_handler(httpd_req_t *req)
 
     char *resp = ts_serial_response(200);
     if (resp) {
-        if (req->method == HTTP_GET) {
-            httpd_resp_sendstr(req, resp);
+        ESP_LOGI(TAG, "status code: %d", ts_resp_status(resp));
+        if (ts_resp_status(resp) == 0x85) {
+            httpd_resp_sendstr(req, ts_resp_data(resp));
         }
         else {
-            httpd_resp_set_status(req, "204 No Content");
-            httpd_resp_sendstr(req, "");
+            // ToDo: Answer with correct HTTP status code derived from ThingSet response
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to get data.");
         }
     }
     else {
-        httpd_resp_sendstr(req, "ERROR");
+        // ToDo: Answer with correct HTTP status code derived from ThingSet response
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to get data.");
+    }
+
+    ts_serial_response_clear();
+
+    return ESP_OK;
+}
+
+static esp_err_t ts_patch_handler(httpd_req_t *req)
+{
+    char ts_req[500];
+
+    httpd_resp_set_type(req, "application/json");
+
+    int len_hdr = ts_req_hdr_from_http(ts_req, sizeof(ts_req), req->method, req->uri);
+
+    /* Truncate if content length larger than the buffer */
+    size_t recv_size = MIN(req->content_len, sizeof(ts_req) - len_hdr - 3);
+
+    int len_data = httpd_req_recv(req, &ts_req[len_hdr + 1], recv_size);
+    if (len_data > 0) {
+        ts_req[len_hdr++] = ' ';
+    }
+    else {
+        len_data = 0;
+    }
+    ts_req[len_hdr + len_data] = '\n';
+    ts_req[len_hdr + len_data + 1] = '\0';
+
+    if (ts_serial_request(ts_req, 100) != ESP_OK) {
+        return ESP_FAIL;
+    }
+
+    char *resp = ts_serial_response(200);
+    int status_code = ts_resp_status(resp != NULL ? resp : "");
+    if (status_code == 0x84) {
+        httpd_resp_set_status(req, "204 No Content");
+        httpd_resp_send(req, NULL, 0);
+    }
+    else {
+        // ToDo: Answer with correct HTTP status code derived from ThingSet response
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to patch data.");
     }
 
     ts_serial_response_clear();
@@ -230,29 +211,29 @@ esp_err_t start_web_server(const char *base_path)
     }
 
     /* URI handler for fetching JSON data */
-    httpd_uri_t json_data_get_uri = {
-        .uri = "/devices/*",
+    httpd_uri_t ts_get_uri = {
+        .uri = "/ts/*",
         .method = HTTP_GET,
-        .handler = json_data_get_handler,
+        .handler = ts_get_handler,
         .user_ctx = server_ctx
     };
-    httpd_register_uri_handler(server, &json_data_get_uri);
+    httpd_register_uri_handler(server, &ts_get_uri);
 
-    httpd_uri_t json_data_patch_uri = {
-        .uri = "/devices/*",
+    httpd_uri_t ts_patch_uri = {
+        .uri = "/ts/*",
         .method = HTTP_PATCH,
-        .handler = json_data_get_handler,
+        .handler = ts_patch_handler,
         .user_ctx = server_ctx
     };
-    httpd_register_uri_handler(server, &json_data_patch_uri);
+    httpd_register_uri_handler(server, &ts_patch_uri);
 
-    httpd_uri_t json_data_post_uri = {
-        .uri = "/devices/*",
+    httpd_uri_t ts_post_uri = {
+        .uri = "/ts/*",
         .method = HTTP_POST,
-        .handler = json_data_get_handler,
+        .handler = ts_get_handler,
         .user_ctx = server_ctx
     };
-    httpd_register_uri_handler(server, &json_data_post_uri);
+    httpd_register_uri_handler(server, &ts_post_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {
