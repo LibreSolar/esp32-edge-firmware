@@ -5,6 +5,7 @@ set(app_sources
 	"ts_serial.c"
 	"can.c"
 	"emoncms.c"
+	"stm32bl.c"
 	"wifi.c"
 	"web_fs.c"
 	"web_server.c"
