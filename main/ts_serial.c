@@ -21,6 +21,8 @@
 #include "cJSON.h"
 #include "driver/uart.h"
 
+#include "stm32bl.h"
+
 static const char *TAG = "ts_ser";
 
 #if CONFIG_THINGSET_SERIAL
@@ -41,6 +43,8 @@ SemaphoreHandle_t pubmsg_buf_lock = NULL;
 /* stores incoming response messages */
 static uint8_t resp_buf[RESP_BUF_SIZE];
 SemaphoreHandle_t resp_buf_lock = NULL;
+
+SemaphoreHandle_t uart_lock = NULL;
 
 /* used UART interface */
 static const int uart_num = UART_NUM_2;
@@ -69,6 +73,9 @@ void ts_serial_setup(void)
     pubmsg_buf_lock = xSemaphoreCreateBinary();
     xSemaphoreGive(pubmsg_buf_lock);
 
+    uart_lock = xSemaphoreCreateBinary();
+    xSemaphoreGive(uart_lock);
+
     events = xEventGroupCreate();
 }
 
@@ -93,7 +100,13 @@ void ts_serial_rx_task(void *arg)
     while (true) {
         uint8_t byte;
         // wait for incoming characters
-        while (uart_read_bytes(uart_num, &byte, 1, portMAX_DELAY) == 0) {;}
+        while (uart_read_bytes(uart_num, &byte, 1, pdMS_TO_TICKS(50)) == 0) {
+            // this allows other threads to block UART read access in this thread (e.g. for
+            // firmware upgrade)
+            xSemaphoreTake(uart_lock, portMAX_DELAY);
+            xSemaphoreGive(uart_lock);
+        }
+
         if (pos == 0 && byte == '#') {
             // only store pub msg if nobody is processing previous message
             if (xSemaphoreTake(pubmsg_buf_lock, 0) == pdTRUE) {
@@ -273,4 +286,33 @@ int ts_serial_scan_device_info(TSDevice *device)
     cJSON_Delete(json_data);
     return 0;
 }
+
+int ts_serial_ota(uint8_t *buf, size_t len)
+{
+    ts_serial_request("!exec/bootloader-stm\n", 100);
+    ts_serial_response_clear();
+
+    // prevent further UART access in RX thread
+    if (xSemaphoreTake(uart_lock, pdMS_TO_TICKS(100)) == pdFALSE) {
+        // this is bad and should not happen, as we already started the bootloader now
+        ESP_LOGE(TAG, "Could not take semaphore uart_lock");
+        return ESP_FAIL;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(200));
+    uart_flush(uart_num);
+    uart_set_parity(uart_num, UART_PARITY_EVEN);
+
+    // read some information and reset the device
+    ESP_LOGI(TAG, "STM32BL init: 0x%x", stm32bl_init());
+    ESP_LOGI(TAG, "STM32BL version: 0x%x", stm32bl_get_version());
+    ESP_LOGI(TAG, "STM32BL pid: 0x%x", stm32bl_get_id());
+    ESP_LOGI(TAG, "STM32BL go to start: 0x%x", stm32bl_go(STM32_START_ADDR));
+
+    uart_set_parity(uart_num, UART_PARITY_DISABLE);
+    xSemaphoreGive(uart_lock);
+
+    return ESP_OK;
+}
+
 #endif

@@ -7,8 +7,11 @@
 #ifndef SERIAL_H_
 #define SERIAL_H_
 
-#include <stdbool.h>
 #include <ts_client.h>
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
 
 /**
  * Initiate the UART interface, event groups and semaphores.
@@ -73,5 +76,12 @@ void ts_serial_response_clear(void);
  * \param device Pointer to allocated struct of type ts_device
  */
 int ts_serial_scan_device_info(TSDevice *device);
+
+/**
+ * Start over-the-air firmware update (OTA)
+ *
+ * Uses the STM32 bootloader via UART. The binary must be stored at the provided address.
+ */
+int ts_serial_ota(uint8_t *buf, size_t len);
 
 #endif /* SERIAL_H_ */

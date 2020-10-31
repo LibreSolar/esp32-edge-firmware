@@ -224,6 +224,19 @@ static esp_err_t ts_handler(httpd_req_t *req)
     return send_response(req, res);
 }
 
+static esp_err_t ota_start_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "text/plain");
+    if (ts_serial_ota(0, 0) != ESP_FAIL) {
+        httpd_resp_sendstr(req, "OTA successful.");
+    }
+    else {
+        httpd_resp_sendstr(req, "OTA failed.");
+    }
+
+    return ESP_OK;
+}
+
 esp_err_t start_web_server(const char *base_path)
 {
     if (base_path == NULL) {
@@ -294,6 +307,14 @@ esp_err_t start_web_server(const char *base_path)
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ts_delete_uri);
+
+    httpd_uri_t ota_start_uri = {
+        .uri = "/ota/start",
+        .method = HTTP_GET,
+        .handler = ota_start_handler,
+        .user_ctx = server_ctx
+    };
+    httpd_register_uri_handler(server, &ota_start_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {
