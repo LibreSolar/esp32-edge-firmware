@@ -11,7 +11,6 @@
 #include "esp_event.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
-#include "tcpip_adapter.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -125,6 +124,9 @@ static void on_wifi_connect(void *esp_netif, esp_event_base_t event_base,
 
 static void start(void)
 {
+    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
+    assert(sta_netif);
+
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
@@ -147,7 +149,7 @@ static void start(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_ERROR_CHECK(tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, CONFIG_DEVICE_HOSTNAME));
+    ESP_ERROR_CHECK(esp_netif_set_hostname(sta_netif, CONFIG_DEVICE_HOSTNAME));
 
     ESP_ERROR_CHECK(esp_wifi_connect());
     s_connection_name = CONFIG_WIFI_SSID;

@@ -17,7 +17,7 @@
 #include "esp_event.h"
 #include "esp_err.h"
 #include "esp_log.h"
-#include "tcpip_adapter.h"
+#include "esp_netif.h"
 #include "driver/gpio.h"
 #include "nvs_flash.h"
 #include "sdkconfig.h"
@@ -40,7 +40,7 @@
 void app_main(void)
 {
     ESP_ERROR_CHECK(nvs_flash_init());
-    tcpip_adapter_init();
+    ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     // configure the LED pad as GPIO and set direction
