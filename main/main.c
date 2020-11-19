@@ -34,6 +34,7 @@
 #include "wifi.h"
 #include "web_fs.h"
 #include "web_server.h"
+#include "provisioning.h"
 
 #define RX_TASK_PRIO    9       // receiving task priority
 
@@ -42,7 +43,7 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-
+    provision();
     // configure the LED pad as GPIO and set direction
     gpio_pad_select_gpio(CONFIG_GPIO_LED);
     gpio_set_direction(CONFIG_GPIO_LED, GPIO_MODE_OUTPUT);
@@ -66,7 +67,7 @@ void app_main(void)
         NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
 #endif
 
-    wifi_connect();
+    //wifi_connect();
 
     start_web_server("/www");
 
