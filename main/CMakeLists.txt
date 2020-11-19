@@ -8,6 +8,7 @@ set(app_sources
 	"wifi.c"
 	"web_fs.c"
 	"web_server.c"
+	"provisioning.c"
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS ".")
