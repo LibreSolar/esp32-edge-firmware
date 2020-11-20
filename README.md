@@ -80,4 +80,10 @@ The firmware is configured using Kconfig integrated into ESP-IDF.
 
 The most convenient way is to run `idf.py menuconfig` after the ESP-IDF was successfully installed. If ESP-IDF is not available and PlatformIO is used, configuration can be changed manually in the generated `sdkconfig` file.
 
-WiFi credentials are currently hard-coded and are also set as Kconfig parameters.
+### Wifi Connection
+
+The firmware supports provisioning via bluetooth. You can download the espressif BLE provisioning app in the [iOS](https://apps.apple.com/in/app/esp-ble-provisioning/id1473590141) or [android](https://play.google.com/store/apps/details?id=com.espressif.provble) app store and scan this QR code:
+
+![Provisioning QR Code](docs/qrcode.svg)
+
+You can also scan for the device manually in the app, the data manager should be found as device `PROV_LS-DM`, the service pin is `LibreSolar`.
