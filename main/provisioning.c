@@ -110,11 +110,9 @@ static void initialise_mdns(void)
 
 static void get_device_service_name(char *service_name, size_t max)
 {
-    uint8_t eth_mac[6];
     const char *ssid_prefix = "PROV_";
-    esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
-    snprintf(service_name, max, "%s%02X%02X%02X",
-             ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
+    snprintf(service_name, max, "%s%s",
+             ssid_prefix, "LS-DM");
 }
 
 void provision(void)
@@ -147,7 +145,7 @@ void provision(void)
         /* What is the Device Service Name that we want
          * This translates to device name
          */
-        char service_name[12];
+        char service_name[11];
         get_device_service_name(service_name, sizeof(service_name));
         wifi_prov_security_t security = WIFI_PROV_SECURITY_1;
         const char *pop = "LibreSolar";
