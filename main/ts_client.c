@@ -28,7 +28,7 @@ char *ts_resp_data(char *resp)
 
 int ts_resp_status(char *resp)
 {
-    int status_code = 0;
+    unsigned int status_code = 0;
     int ret = sscanf(resp, ":%X ", &status_code);
     if (ret > 0) {
         return status_code;

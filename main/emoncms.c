@@ -67,7 +67,7 @@ static int send_emoncms(struct addrinfo *res, const char *node_name, const char 
     ESP_LOGI(TAG, "... connected");
 
     int err = write(s, http_header, strlen(http_header));
-    sprintf(buf, "Content-Length: %d\r\n\r\n", strlen(http_body));
+    sprintf(buf, "Content-Length: %d\r\n\r\n", (int)strlen(http_body));
     err += write(s, buf, strlen(buf));
     err += write(s, http_body, strlen(http_body));
     err += write(s, "\r\n", 1);
@@ -103,9 +103,9 @@ void emoncms_post_task(void *arg)
     };
     struct addrinfo *res;
     struct in_addr *addr;
-    esp_err_t err;
 
     while (1) {
+        esp_err_t err;
 
         // wait until we receive an update
         while (update_bms_received == false &&

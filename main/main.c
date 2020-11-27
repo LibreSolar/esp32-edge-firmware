@@ -50,7 +50,7 @@ void app_main(void)
 
     // wait 3s to open serial terminal after flashing finished
     vTaskDelay(3000 / portTICK_PERIOD_MS);
- 	printf("Booting Libre Solar Data Manager...\n");
+    printf("Booting Libre Solar Data Manager...\n");
 
     init_fs();
 
