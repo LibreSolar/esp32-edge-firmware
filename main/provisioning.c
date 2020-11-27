@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2020 Martin Jäger / Libre Solar
  */
-
+#include <string.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
@@ -12,13 +12,16 @@
 #include <esp_wifi.h>
 #include <esp_event.h>
 #include <nvs_flash.h>
-
+#include <mdns.h>
 #include <wifi_provisioning/manager.h>
 
 #include <wifi_provisioning/scheme_ble.h>
 #include "provisioning.h"
 
+
+
 static const char *TAG = "prov";
+
 
 const int WIFI_CONNECTED_EVENT = BIT0;
 static EventGroupHandle_t wifi_event_group;
@@ -59,6 +62,21 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 break;
         }
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        /*Set the hostname for the default TCP/IP station interface
+        esp_err_t err;
+        char *HOSTNAME = "ls-datamanager";
+        const char *name;
+        if ((err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, HOSTNAME))
+                != ESP_OK) {
+            ESP_LOGE(TAG, "Err: %s", esp_err_to_name(err));
+        } else {
+            if ((err = tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &name)) != ESP_OK) {
+                ESP_LOGE(TAG, "Err Get Hostname: %s\n", esp_err_to_name(err));
+            } else {
+                ESP_LOGE(TAG, "Hostname: %s\n", (name == NULL ? "<None>" : name));
+            }
+        }*/
+    
         esp_wifi_connect();
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
@@ -69,6 +87,26 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "Disconnected. Connecting to the AP again...");
         esp_wifi_connect();
     }
+}
+
+static void initialise_mdns(void)
+{
+    char* hostname = "datamanager";
+    //initialize mDNS
+    ESP_ERROR_CHECK( mdns_init() );
+    //set mDNS hostname (required if you want to advertise services)
+    ESP_ERROR_CHECK( mdns_hostname_set(hostname) );
+    ESP_LOGI(TAG, "mdns hostname set to: [%s]", hostname);
+    //set default mDNS instance name
+    ESP_ERROR_CHECK( mdns_instance_name_set("datamanager") );
+
+    //structure with TXT records
+    mdns_txt_item_t serviceTxtData[1] = {
+        {"board","esp32"}
+    };
+
+    //initialize service
+    ESP_ERROR_CHECK( mdns_service_add("ESP32-WebServer", "_http", "_tcp", 80, serviceTxtData, 1) );    
 }
 
 static void get_device_service_name(char *service_name, size_t max)
@@ -133,7 +171,8 @@ void provision(void)
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
         ESP_ERROR_CHECK(esp_wifi_start());
     }
-
+    // start mdns 
+    initialise_mdns();
     /* Wait for Wi-Fi connection */
     xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, false, true, portMAX_DELAY);
     return;
