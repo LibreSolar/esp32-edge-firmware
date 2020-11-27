@@ -62,21 +62,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 break;
         }
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        /*Set the hostname for the default TCP/IP station interface
-        esp_err_t err;
-        char *HOSTNAME = "ls-datamanager";
-        const char *name;
-        if ((err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, HOSTNAME))
-                != ESP_OK) {
-            ESP_LOGE(TAG, "Err: %s", esp_err_to_name(err));
-        } else {
-            if ((err = tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &name)) != ESP_OK) {
-                ESP_LOGE(TAG, "Err Get Hostname: %s\n", esp_err_to_name(err));
-            } else {
-                ESP_LOGE(TAG, "Hostname: %s\n", (name == NULL ? "<None>" : name));
-            }
-        }*/
-    
         esp_wifi_connect();
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
@@ -98,7 +83,7 @@ static void initialise_mdns(void)
     ESP_ERROR_CHECK( mdns_hostname_set(hostname) );
     ESP_LOGI(TAG, "mdns hostname set to: [%s]", hostname);
     //set default mDNS instance name
-    ESP_ERROR_CHECK( mdns_instance_name_set("datamanager") );
+    ESP_ERROR_CHECK( mdns_instance_name_set("LibreSolar Datamanager on ESP32"));
 
     //structure with TXT records
     mdns_txt_item_t serviceTxtData[1] = {
@@ -171,8 +156,10 @@ void provision(void)
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
         ESP_ERROR_CHECK(esp_wifi_start());
     }
+
     // start mdns 
     initialise_mdns();
+
     /* Wait for Wi-Fi connection */
     xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, false, true, portMAX_DELAY);
     return;
