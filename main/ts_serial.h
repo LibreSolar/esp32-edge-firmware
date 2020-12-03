@@ -8,6 +8,7 @@
 #define SERIAL_H_
 
 #include <stdbool.h>
+#include <ts_client.h>
 
 /**
  * Initiate the UART interface, event groups and semaphores.
@@ -65,5 +66,12 @@ char *ts_serial_response(int timeout_ms);
  * This must be called after processing of a successfully received response is finished.
  */
 void ts_serial_response_clear(void);
+
+/**
+ * Scan for device on the serial connection
+ *
+ * \param device Pointer to allocated struct of type ts_device
+ */
+int ts_serial_scan_device_info(TSDevice *device);
 
 #endif /* SERIAL_H_ */

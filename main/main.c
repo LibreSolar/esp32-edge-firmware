@@ -29,6 +29,7 @@
 #include "lwip/dns.h"
 
 #include "ts_serial.h"
+#include "ts_client.h"
 #include "can.h"
 #include "emoncms.h"
 #include "wifi.h"
@@ -58,13 +59,15 @@ void app_main(void)
 #if CONFIG_THINGSET_CAN
     can_setup();
     xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096,
-        NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
+        NULL, RX_TASK_PRIO, NULL, 1);
 #endif
 
 #if CONFIG_THINGSET_SERIAL
     ts_serial_setup();
+
     xTaskCreatePinnedToCore(ts_serial_rx_task, "ts_serial_rx", 4096,
-        NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
+        NULL, RX_TASK_PRIO, NULL, 1);
+    ts_scan_devices();
 #endif
 
     if (strlen(CONFIG_WIFI_SSID) > 0) {

@@ -17,7 +17,8 @@
 #include "esp_system.h"
 #include "esp_err.h"
 #include "esp_log.h"
-
+#include "ts_client.h"
+#include "cJSON.h"
 #include "driver/uart.h"
 
 static const char *TAG = "ts_ser";
@@ -91,10 +92,8 @@ void ts_serial_rx_task(void *arg)
 
     while (true) {
         uint8_t byte;
-
         // wait for incoming characters
         while (uart_read_bytes(uart_num, &byte, 1, portMAX_DELAY) == 0) {;}
-
         if (pos == 0 && byte == '#') {
             // only store pub msg if nobody is processing previous message
             if (xSemaphoreTake(pubmsg_buf_lock, 0) == pdTRUE) {
@@ -125,7 +124,6 @@ void ts_serial_rx_task(void *arg)
                 terminate_buffer(resp_buf, pos);
                 xEventGroupSetBits(events, FLAG_RESPONSE_RECEIVED);
                 receiving_resp = false;
-                ESP_LOGI("serial", "Received response with %d bytes: %s\n", pos, resp_buf);
             }
             pos = 0;
         }
@@ -199,4 +197,79 @@ void ts_serial_response_clear()
     xSemaphoreGive(resp_buf_lock);
 }
 
+// CAN_Address is not needed here, but we need the same signature
+// as CAN send
+char *ts_serial_send(char *req, uint8_t CAN_Address)
+{
+    if (req == NULL) {
+        ESP_LOGE(TAG, "Got invalid parameter");
+        return NULL;
+    }
+
+    if (ts_serial_request(req, 200) != ESP_OK) {
+        ESP_LOGE(TAG, "Request failed: %s", req);
+        return NULL;
+    }
+
+    char *buf = ts_serial_response(200);
+    if (buf == NULL) {
+        ESP_LOGE(TAG, "Response failed");
+        ts_serial_response_clear();
+        return NULL;
+    }
+
+    char *resp = (char *) heap_caps_malloc(strlen(buf)+1, MALLOC_CAP_8BIT);
+    strcpy(resp, buf);
+    ts_serial_response_clear();
+    return resp;
+}
+
+int ts_serial_scan_device_info(TSDevice *device)
+{
+    char req[7]= "?info\n\0";
+    // First request mostly fails, so we request it twice
+    if (ts_serial_request(req, 500) == ESP_FAIL) {
+        ESP_LOGE(TAG, "Could not scan for devices on serial adapter");
+    }
+
+    char *resp = ts_serial_response(500);
+    int status = ts_resp_status(resp != NULL ? resp : "");
+    if (status != TS_STATUS_CONTENT) {
+        ESP_LOGE(TAG, "Could not retrieve device information: Code %d", status);
+        ts_serial_response_clear();
+    }
+
+    ts_serial_response_clear();
+
+    if (ts_serial_request(req, 500) == ESP_FAIL) {
+        ESP_LOGE(TAG, "Could not scan for devices on serial adapter");
+        return -1;
+
+    }
+
+    resp = ts_serial_response(500);
+    status = ts_resp_status(resp != NULL ? resp : "");
+    if (status != TS_STATUS_CONTENT) {
+        ESP_LOGE(TAG, "Could not retrieve device information: Code %d", status);
+        ts_serial_response_clear();
+        return -1;
+    }
+
+    // shift pointer to data
+    resp = ts_resp_data(resp);
+
+    cJSON *json_data = cJSON_Parse(resp);
+    ts_serial_response_clear();
+    device->ts_name = (char *) heap_caps_malloc(strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceType")))+1, MALLOC_CAP_8BIT);
+    strcpy(device->ts_name, cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceType")));
+
+    device->ts_device_id = (char *) heap_caps_malloc(strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceID"))+1), MALLOC_CAP_8BIT);
+    strcpy(device->ts_device_id , cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceID")));
+    // link send function
+    device->send = ts_serial_send;
+    device->CAN_Address = UINT8_MAX;
+    ESP_LOGI(TAG, "Found device with ID: %s!", device->ts_device_id);
+    cJSON_Delete(json_data);
+    return 0;
+}
 #endif

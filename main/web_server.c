@@ -19,6 +19,8 @@
 
 static const char *TAG = "websrv";
 
+int url_base_offset;
+
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
 #define SCRATCH_BUFSIZE (10240)
 
@@ -29,6 +31,48 @@ typedef struct web_server_context {
 
 #define CHECK_FILE_EXTENSION(filename, ext) \
     (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0)
+
+/* Create proper HTTP Response Code */
+
+const char *translate_status_code(uint8_t ts_status_code)
+{
+    switch (ts_status_code){
+        case  TS_STATUS_CREATED:
+            return "201";
+        case TS_STATUS_DELETED:
+            return "204";
+        case TS_STATUS_VALID:
+            return "200";
+        case TS_STATUS_CHANGED:
+            return "204";
+        case TS_STATUS_CONTENT:
+            return "200";
+        case TS_STATUS_BAD_REQUEST:
+            return "400";
+        case TS_STATUS_REQUEST_INCOMPLETE:
+            return "400";
+        case TS_STATUS_UNAUTHORIZED:
+            return "401";
+        case TS_STATUS_FORBIDDEN:
+            return "403";
+        case TS_STATUS_NOT_FOUND:
+            return "404";
+        case TS_STATUS_METHOD_NOT_ALLOWED:
+            return "405";
+        case TS_STATUS_CONFLICT:
+            return "409";
+        case TS_STATUS_REQUEST_TOO_LARGE:
+            return "413";
+        case TS_STATUS_UNSUPPORTED_FORMAT:
+            return "415";
+        case TS_STATUS_INTERNAL_SERVER_ERR:
+            return "500";
+        case TS_STATUS_NOT_IMPLEMENTED:
+            return "501";
+        default:
+            return "500";
+    }
+}
 
 /* Set HTTP response content type according to file extension */
 static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filepath)
@@ -102,86 +146,85 @@ static esp_err_t common_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static esp_err_t ts_get_handler(httpd_req_t *req)
+static char *receive_content(httpd_req_t *req)
 {
-    char ts_req[100];
-
-    httpd_resp_set_type(req, "application/json");
-
-    int pos = ts_req_hdr_from_http(ts_req, sizeof(ts_req), req->method, req->uri);
-
-    if (pos > 0 && pos < sizeof(ts_req) - 2) {
-        ts_req[pos] = '\n';
-        ts_req[pos + 1] = '\0';
+    // +1 for termination
+    char *buf = heap_caps_malloc(req->content_len+1, MALLOC_CAP_8BIT);
+    if (buf == NULL) {
+        ESP_LOGE(TAG, "Unable to allocate memory for content");
+        return NULL;
     }
-    else {
+    int bytes_received = 0;
+    while (req->content_len - bytes_received > 0) {
+        bytes_received += httpd_req_recv(req, buf, req->content_len);
+    }
+    ESP_LOGD(TAG, "received %d bytes: %s", bytes_received, buf);
+    buf[req->content_len] = '\0';
+    return buf;
+}
+
+static esp_err_t get_content(httpd_req_t *req, char **content)
+{
+    if (req->content_len != 0) {
+        *content = receive_content(req);
+    }
+    if (*content == NULL && req->content_len > 0) {
         return ESP_FAIL;
     }
-
-    if (ts_serial_request(ts_req, 100) != ESP_OK) {
-        return ESP_FAIL;
-    }
-
-    char *resp = ts_serial_response(200);
-    if (resp) {
-        ESP_LOGI(TAG, "status code: %d", ts_resp_status(resp));
-        if (ts_resp_status(resp) == 0x85) {
-            httpd_resp_sendstr(req, ts_resp_data(resp));
-        }
-        else {
-            // ToDo: Answer with correct HTTP status code derived from ThingSet response
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to get data.");
-        }
-    }
-    else {
-        // ToDo: Answer with correct HTTP status code derived from ThingSet response
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to get data.");
-    }
-
-    ts_serial_response_clear();
-
     return ESP_OK;
 }
 
-static esp_err_t ts_patch_handler(httpd_req_t *req)
+static esp_err_t send_response(httpd_req_t *req, TSResponse *res)
 {
-    char ts_req[500];
-
+    httpd_resp_set_status(req, translate_status_code(res->ts_status_code));
     httpd_resp_set_type(req, "application/json");
-
-    int len_hdr = ts_req_hdr_from_http(ts_req, sizeof(ts_req), req->method, req->uri);
-
-    /* Truncate if content length larger than the buffer */
-    size_t recv_size = MIN(req->content_len, sizeof(ts_req) - len_hdr - 3);
-
-    int len_data = httpd_req_recv(req, &ts_req[len_hdr + 1], recv_size);
-    if (len_data > 0) {
-        ts_req[len_hdr++] = ' ';
+    if (res->data != NULL) {
+        ESP_LOGD(TAG, "Sending out data: %s", res->data);
+        // res->data points to res->block behind the "header" section of ts-response
+        httpd_resp_sendstr(req, res->data);
+        heap_caps_free(res->block);
+    } else {
+        httpd_resp_send(req, NULL, 0);
     }
-    else {
-        len_data = 0;
-    }
-    ts_req[len_hdr + len_data] = '\n';
-    ts_req[len_hdr + len_data + 1] = '\0';
+    heap_caps_free(res);
+    return ESP_OK;
+}
 
-    if (ts_serial_request(ts_req, 100) != ESP_OK) {
+static esp_err_t ts_get_devices_handler(httpd_req_t *req)
+{
+    char *names = ts_get_device_list();
+    if (names != NULL) {
+        httpd_resp_set_status(req, "200");
+        httpd_resp_sendstr(req, names);
+        free(names);
+    } else {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to get device list.");
+    }
+    return ESP_OK;
+}
+
+static esp_err_t ts_handler(httpd_req_t *req)
+{
+    if (req->uri[url_base_offset] == '\0') {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Resource not found");
+        return ESP_OK;
+    }
+    char *content = NULL;
+    if (get_content(req, &content) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not receive content");
         return ESP_FAIL;
     }
 
-    char *resp = ts_serial_response(200);
-    int status_code = ts_resp_status(resp != NULL ? resp : "");
-    if (status_code == 0x84) {
-        httpd_resp_set_status(req, "204 No Content");
-        httpd_resp_send(req, NULL, 0);
-    }
-    else {
-        // ToDo: Answer with correct HTTP status code derived from ThingSet response
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to patch data.");
+    TSResponse *res = ts_execute(req->uri + url_base_offset, content, req->method);
+    if (content != NULL) {
+        heap_caps_free(content);
     }
 
-    ts_serial_response_clear();
-
-    return ESP_OK;
+    if (res == NULL) {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Device not connected");
+        return ESP_OK;
+    }
+    return send_response(req, res);
 }
 
 esp_err_t start_web_server(const char *base_path)
@@ -201,8 +244,11 @@ esp_err_t start_web_server(const char *base_path)
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
+    config.core_id = 1;
+    config.stack_size = 8*1024;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
+    url_base_offset = strlen("/api/v1/ts/");
 
     if (httpd_start(&server, &config) != ESP_OK) {
         ESP_LOGE(TAG, "Start server failed");
@@ -210,30 +256,47 @@ esp_err_t start_web_server(const char *base_path)
         return ESP_FAIL;
     }
 
+    /* URI handler to get connected device list */
+    httpd_uri_t ts_get_devices_uri = {
+        .uri = "/api/v1/ts/devices/?",
+        .method = HTTP_GET,
+        .handler = ts_get_devices_handler,
+        .user_ctx = server_ctx
+    };
+    httpd_register_uri_handler(server, &ts_get_devices_uri);
+
     /* URI handler for fetching JSON data */
     httpd_uri_t ts_get_uri = {
-        .uri = "/ts/*",
+        .uri = "/api/v1/ts/*",
         .method = HTTP_GET,
-        .handler = ts_get_handler,
+        .handler = ts_handler,
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ts_get_uri);
 
     httpd_uri_t ts_patch_uri = {
-        .uri = "/ts/*",
+        .uri = "/api/v1/ts/*",
         .method = HTTP_PATCH,
-        .handler = ts_patch_handler,
+        .handler = ts_handler,
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ts_patch_uri);
 
     httpd_uri_t ts_post_uri = {
-        .uri = "/ts/*",
+        .uri = "/api/v1/ts/*",
         .method = HTTP_POST,
-        .handler = ts_get_handler,
+        .handler = ts_handler,
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ts_post_uri);
+
+    httpd_uri_t ts_delete_uri = {
+        .uri = "/api/v1/ts/*",
+        .method = HTTP_DELETE,
+        .handler = ts_handler,
+        .user_ctx = server_ctx
+    };
+    httpd_register_uri_handler(server, &ts_delete_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {
