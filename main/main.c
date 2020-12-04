@@ -43,7 +43,7 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    provision();
+
     // configure the LED pad as GPIO and set direction
     gpio_pad_select_gpio(CONFIG_GPIO_LED);
     gpio_set_direction(CONFIG_GPIO_LED, GPIO_MODE_OUTPUT);
@@ -67,7 +67,13 @@ void app_main(void)
         NULL, RX_TASK_PRIO, NULL, tskNO_AFFINITY);
 #endif
 
-    //wifi_connect();
+    if (strlen(CONFIG_WIFI_SSID) > 0) {
+        wifi_connect();
+    }
+    else {
+        // no hard-coded WiFi credentials --> start provisioning via BLE
+        provision();
+    }
 
     start_web_server("/www");
 
