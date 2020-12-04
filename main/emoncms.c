@@ -107,12 +107,16 @@ void emoncms_post_task(void *arg)
     while (1) {
         esp_err_t err;
 
+        // attempt to get serial publication message
+        char *pub_msg = ts_serial_pubmsg(100);
+
         // wait until we receive an update
         while (update_bms_received == false &&
-               update_mppt_received == false/* &&
-               pub_serial_received == false*/)
+               update_mppt_received == false &&
+               pub_msg == NULL)
         {
-            vTaskDelay(100 / portTICK_PERIOD_MS);
+            // try again as long as a message from
+            pub_msg = ts_serial_pubmsg(100);
         }
 
         //esp_netif_ip_info_t ip_info;
@@ -150,15 +154,15 @@ void emoncms_post_task(void *arg)
         gpio_set_level(CONFIG_GPIO_LED, 1);
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
-/*
-        if (pub_serial_received) {
+
+        if (pub_msg != NULL && strlen(pub_msg) > 2) {
             gpio_set_level(CONFIG_GPIO_LED, 0);
-            send_emoncms(res, CONFIG_EMONCMS_NODE_SERIAL, get_serial_json_data());
-            pub_serial_received = false;
+            send_emoncms(res, CONFIG_EMONCMS_NODE_SERIAL, pub_msg + 2);
+            ts_serial_pubmsg_clear();
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
         gpio_set_level(CONFIG_GPIO_LED, 1);
-*/
+
         // sending interval almost 10s
         vTaskDelay(8000 / portTICK_PERIOD_MS);
 
