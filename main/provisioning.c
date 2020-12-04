@@ -63,7 +63,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         /*Set the hostname for the default TCP/IP station interface
         esp_err_t err;
-        char *HOSTNAME = "ls-datamanager";
+        char *HOSTNAME = CONFIG_DEVICE_HOSTNAME;
         const char *name;
         if ((err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, HOSTNAME))
                 != ESP_OK) {
@@ -90,14 +90,14 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 
 static void initialise_mdns(void)
 {
-    char* hostname = "datamanager";
+    char* hostname = CONFIG_DEVICE_HOSTNAME;
     //initialize mDNS
     ESP_ERROR_CHECK( mdns_init() );
     //set mDNS hostname (required if you want to advertise services)
     ESP_ERROR_CHECK( mdns_hostname_set(hostname) );
     ESP_LOGI(TAG, "mdns hostname set to: [%s]", hostname);
     //set default mDNS instance name
-    ESP_ERROR_CHECK( mdns_instance_name_set("datamanager") );
+    ESP_ERROR_CHECK( mdns_instance_name_set(CONFIG_DEVICE_HOSTNAME) );
 
     //structure with TXT records
     mdns_txt_item_t serviceTxtData[1] = {

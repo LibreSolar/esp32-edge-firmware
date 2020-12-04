@@ -1,4 +1,4 @@
-# Libre Solar Data Manager Firmware
+# Libre Solar ESP32 Edge Firmware
 
 Firmware for CAN and UART to WiFi or Bluetooth gateway based on ESP32-IDF v4.0.
 
@@ -47,11 +47,11 @@ The data can be accessed in the same way as described above.
 
 ### Build the Webapp
 
-To be able to build the data-manager-firmware you need to build the webapp first.
+To be able to build the esp32-edge-firmware you need to build the webapp first.
 To do so, go into the webapp folder
 
 ```
-    cd data-manager-firmware/webapp
+    cd esp32-edge-firmware/webapp
 ```
 and run
 

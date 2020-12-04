@@ -54,7 +54,7 @@ menu "User Configuration"
 
     config DEVICE_HOSTNAME
         string "Device host name"
-        default "data-manager"
+        default "esp32-edge"
         help
             Specify the default host name for this device. It shall be user-configurable in
             the future.
