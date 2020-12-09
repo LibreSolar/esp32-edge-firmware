@@ -6,21 +6,44 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    chart_value: [8, 2, 5, 9, 5, 11, 3, 5, 10, 0, 1, 8, 2, 9, 0, 13, 10, 7, 16],
+    chart_data: {},
+    chart_data_keys: [],
+    loading: false
+
   },
   mutations: {
-    update_chart_value(state, new_data) {
-      // ToDo: Plot more values than just Bat_V
-      state.chart_value.push(new_data["Bat_V"]);
-      state.chart_value.shift();
+    init_chart_data(state, new_data) {
+      const keys = Object.keys(new_data)
+      keys.forEach(key => {
+        new_data[key] = Array(20).fill(0)
+        state.chart_data = new_data
+      })
+      state.chart_data_keys = keys
+      console.log(state.chart_data)
+    },
+    update_chart_data(state, new_data) {
+      state.chart_data_keys.forEach(key => {
+        state.chart_data[key].push(new_data[key])
+        state.chart_data[key].shift()
+      });
       console.log(new_data);
+      console.log(state.chart_data);
     }
   },
   actions: {
-    update_chart_value({ commit }) {
-      axios.get("/api/output")
+    init_chart_data( { commit }) {
+      return axios.get("ts/serial/output")
         .then(data => {
-          commit("update_chart_value", data.data);
+          commit("init_chart_data", data.data);
+        })
+        .catch(error => {
+          console.log(error);
+        })
+    },
+    update_chart_data({ commit }) {
+      return axios.get("ts/serial/output")
+        .then(data => {
+          commit("update_chart_data", data.data);
         })
         .catch(error => {
           console.log(error);

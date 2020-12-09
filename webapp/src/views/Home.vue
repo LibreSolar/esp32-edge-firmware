@@ -34,7 +34,7 @@ export default {
   },
   mounted() {
     this.$ajax
-      .get('/api/info')
+      .get('/ts/serial/info')
       .then(data => {
         this.manufacturer = data.data.Manufacturer;
         this.device_id = data.data.DeviceID;

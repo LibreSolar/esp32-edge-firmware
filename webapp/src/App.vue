@@ -1,77 +1,54 @@
 <template>
-  <v-app id="inspire">
-    <v-navigation-drawer v-model="drawer" fixed app clipped>
-      <v-list>
-        <v-list-tile to="/">
-          <v-list-tile-action>
-            <v-icon>home</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <v-list-tile-title>Device Info</v-list-tile-title>
-          </v-list-tile-content>
-        </v-list-tile>
-        <v-list-tile to="/live">
-          <v-list-tile-action>
-            <v-icon>timeline</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <v-list-tile-title>Live View</v-list-tile-title>
-          </v-list-tile-content>
-        </v-list-tile>
-        <v-list-tile to="/config">
-          <v-list-tile-action>
-            <v-icon>tune</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <v-list-tile-title>Configuration</v-list-tile-title>
-          </v-list-tile-content>
-        </v-list-tile>
-        <v-list-tile to="/inout">
-          <v-list-tile-action>
-            <v-icon>sync_alt</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <v-list-tile-title>Input/Output</v-list-tile-title>
-          </v-list-tile-content>
-        </v-list-tile>
-        <v-list-tile to="/log">
-          <v-list-tile-action>
-            <v-icon>bar_chart</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <v-list-tile-title>Data Log</v-list-tile-title>
-          </v-list-tile-content>
-        </v-list-tile>
+  <v-app>
+    <v-app-bar
+      app
+      color="primary"
+      clipped-left
+      dark
+    >
+      <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+      <v-spacer></v-spacer>
+
+      <v-btn
+        href="https://github.com/LibreSolar/data-manager-firmware"
+        target="_blank"
+        text
+      >
+        <span class="mr-2">Latest Release</span>
+        <v-icon>mdi-open-in-new</v-icon>
+      </v-btn>
+    </v-app-bar>
+
+    <v-navigation-drawer v-model="drawer" app clipped>
+      <v-list
+        dense
+        nav
+      >
+        <v-list-item
+          v-for="item in items"
+          :key="item.title"
+          link :to="item.href"
+        >
+          <v-list-item-icon>
+            <v-icon>{{ item.icon }}</v-icon>
+          </v-list-item-icon>
+
+          <v-list-item-content>
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
       </v-list>
     </v-navigation-drawer>
-    <v-toolbar color="primary" dark fixed app clipped-left>
-      <v-toolbar-side-icon @click.stop="drawer = !drawer"></v-toolbar-side-icon>
-      <v-spacer></v-spacer>
-      <v-menu :nudge-width="100">
-        <v-toolbar-title slot="activator">
-          <span>MPPT 1210 HUS</span>
-          <v-icon dark>arrow_drop_down</v-icon>
-        </v-toolbar-title>
-        <v-list>
-          <v-list-tile v-for="item in items" :key="item" @click=";">
-            <v-list-tile-title v-text="item"></v-list-tile-title>
-          </v-list-tile>
-        </v-list>
-      </v-menu>
 
-      <v-spacer></v-spacer>
-      <v-btn icon>
-        <v-icon>settings</v-icon>
-      </v-btn>
-    </v-toolbar>
-    <v-content>
+    <v-main class="accent">
       <v-container fluid fill-height>
-        <router-view></router-view>
+        <router-view/>
       </v-container>
-    </v-content>
+    </v-main>
+
     <v-footer color="primary">
       <v-spacer></v-spacer>
-      <span class="white--text">Made with <v-icon small dark>favorite_border</v-icon> by Libre Solar</span>
+      <span class="white--text">Made with <v-icon small dark>mdi-heart</v-icon> by Libre Solar</span>
       <v-spacer></v-spacer>
     </v-footer>
   </v-app>
@@ -80,13 +57,18 @@
 <script>
 export default {
   name: 'App',
-  data() {
+  data () {
     return {
-      drawer: null,
+      drawer: true,
       items: [
-        'MPPT 1210 HUS', 'BMS 15S80 SC', 'MPPT 2420 LC'
-      ]
+        { title: 'Device Info', href: '/', icon: 'mdi-home' },
+        { title: 'Live View', href: '/live', icon: 'mdi-chart-line' },
+        { title: 'Configuration', href: '/config', icon: 'mdi-tune' },
+        { title: 'Inout/Output', icon: 'mdi-swap-horizontal' },
+        { title: 'Data Log', icon: 'mdi-chart-bar' },
+      ],
+      right: null,
     }
-  }
-}
+  },
+};
 </script>
