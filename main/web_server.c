@@ -39,16 +39,13 @@ const char *translate_status_code(uint8_t ts_status_code)
     switch (ts_status_code){
         case  TS_STATUS_CREATED:
             return "201";
-        case TS_STATUS_DELETED:
-            return "204";
         case TS_STATUS_VALID:
-            return "200";
-        case TS_STATUS_CHANGED:
-            return "204";
         case TS_STATUS_CONTENT:
             return "200";
+        case TS_STATUS_CHANGED:
+        case TS_STATUS_DELETED:
+            return "204";
         case TS_STATUS_BAD_REQUEST:
-            return "400";
         case TS_STATUS_REQUEST_INCOMPLETE:
             return "400";
         case TS_STATUS_UNAUTHORIZED:
@@ -258,7 +255,7 @@ esp_err_t start_web_server(const char *base_path)
 
     /* URI handler to get connected device list */
     httpd_uri_t ts_get_devices_uri = {
-        .uri = "/api/v1/ts/devices/?",
+        .uri = "/api/v1/ts/",
         .method = HTTP_GET,
         .handler = ts_get_devices_handler,
         .user_ctx = server_ctx

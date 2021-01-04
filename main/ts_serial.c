@@ -260,10 +260,11 @@ int ts_serial_scan_device_info(TSDevice *device)
 
     cJSON *json_data = cJSON_Parse(resp);
     ts_serial_response_clear();
-    device->ts_name = (char *) heap_caps_malloc(strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceType")))+1, MALLOC_CAP_8BIT);
+    size_t ts_string_len = strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceType")));
+    device->ts_name = (char *) heap_caps_malloc(ts_string_len+1, MALLOC_CAP_8BIT);
     strcpy(device->ts_name, cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceType")));
-
-    device->ts_device_id = (char *) heap_caps_malloc(strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceID"))+1), MALLOC_CAP_8BIT);
+    ts_string_len = strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceID")));
+    device->ts_device_id = (char *) heap_caps_malloc(ts_string_len+1, MALLOC_CAP_8BIT);
     strcpy(device->ts_device_id , cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceID")));
     // link send function
     device->send = ts_serial_send;

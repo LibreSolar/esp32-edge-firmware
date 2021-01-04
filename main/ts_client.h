@@ -61,7 +61,8 @@ typedef struct {
     uint8_t CAN_Address;
     char *ts_device_id;
     char *ts_name;
-    char *(*send)(char * req, uint8_t CAN_Address);     //function pointer to send requests to device, abstracting underlying connection
+    //function pointer to send requests to device, abstracting underlying connection
+    char *(*send)(char * req, uint8_t CAN_Address);     
 } TSDevice;
 
 /**
@@ -102,7 +103,7 @@ int ts_resp_status(char *resp);
 void ts_scan_devices();
 
 /**
- * Will return a list with the names of connected devices
+ * Will return a list with the names and IDs of connected devices
  *
  * \returns A char pointer to a stringified json array
  *

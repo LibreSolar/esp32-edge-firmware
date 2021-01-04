@@ -19,12 +19,8 @@ static const char *TAG = "ts_client";
 static TSDevice *devices[10];
 
 
-//scan devices and initialise device list with NULL
 void ts_scan_devices()
 {
-    for (int i = 0; i < 10; i++) {
-        devices[i] = NULL;
-    }
     //scan serial connection
     devices[0] = (TSDevice *) heap_caps_malloc(sizeof(TSDevice), MALLOC_CAP_8BIT);
     if (ts_serial_scan_device_info(devices[0]) != 0) {
@@ -37,25 +33,26 @@ void ts_scan_devices()
 
 char *ts_get_device_list()
 {
-    cJSON *names = cJSON_CreateArray();
+    cJSON *obj = cJSON_CreateObject();
     int i = 0;
     while (devices[i] != NULL) {
-        cJSON *name = cJSON_CreateString(devices[i]->ts_name);
-        cJSON_AddItemToArray(names, name);
+        cJSON *id = cJSON_CreateString(devices[i]->ts_device_id);
+        cJSON_AddItemToObject(obj, devices[i]->ts_name, id);
         i++;
     }
     char *names_string = NULL;
     if (i > 0) {
-        names_string = cJSON_Print(names);
-        cJSON_Delete(names);
+        names_string = cJSON_Print(obj);
+        cJSON_Delete(obj);
     } else {
         // hackky solution so that free() can always be called on names_string
-        char *msg = "No devices Connected";
-        names_string = (char *) malloc(strlen(msg)+1*sizeof(char));
-        strncpy(names_string, msg, strlen(msg)+1);
+        const char msg[] = "No devices Connected";
+        names_string = (char *) malloc(sizeof(msg)+1);
+        strncpy(names_string, msg, sizeof(msg)+1);
     }
     return names_string;
 }
+
 TSDevice *ts_get_device(char *device_id)
 {
     int i = 0;
@@ -89,14 +86,14 @@ char *exec_or_create(char *node)
 
 void ts_parse_uri(const char *uri, TSUriElems *params)
 {
-    if (uri == NULL || !strcmp(uri, "")) {
+    if (uri == NULL || uri[0] == '\0') {
         ESP_LOGE(TAG, "Got invalid uri");
         return;
     }
     params->ts_list_subnodes = uri[strlen(uri)] == '/' ? 0 : 1;
 
     // copy uri so we can safely modify
-    char *temp_uri = (char *) heap_caps_malloc(sizeof(char)*(strlen(uri)+1), MALLOC_CAP_8BIT);
+    char *temp_uri = (char *) heap_caps_malloc((strlen(uri)+1), MALLOC_CAP_8BIT);
     if (temp_uri == NULL) {
         ESP_LOGE(TAG, "Unable to allocate memory for temp_uri");
         return;
@@ -111,7 +108,7 @@ void ts_parse_uri(const char *uri, TSUriElems *params)
     temp_uri[i] = '\0';
     params->ts_device_id = temp_uri;
     // this points either to '\0' aka NULL or the rest of the string
-    params->ts_target_node = temp_uri+i+1;
+    params->ts_target_node = temp_uri + i + 1;
     ESP_LOGD(TAG, "Device_id: %s", params->ts_device_id);
     ESP_LOGD(TAG, "Target Node: %s", params->ts_target_node);
     ESP_LOGD(TAG, "List the sub nodes: %s", params->ts_list_subnodes == 1 ? "yes" : "no");
@@ -126,9 +123,10 @@ char *ts_build_query(uint8_t ts_method, TSUriElems *params)
     }
     nbytes += strlen_null(params->ts_target_node);
     if (params->ts_payload != NULL) {
-        nbytes += strlen_null(params->ts_payload) +1;    // additional whitespace between uri and array/json
+        // additional whitespace between uri and array/json
+        nbytes += strlen_null(params->ts_payload) +1;
     }
-    char *ts_query = (char *) heap_caps_malloc(sizeof(char)*nbytes, MALLOC_CAP_8BIT);
+    char *ts_query = (char *) heap_caps_malloc(nbytes, MALLOC_CAP_8BIT);
 
     if (ts_query == NULL) {
         ESP_LOGE(TAG, "Unable to allocate memory for ts_query");
@@ -192,7 +190,7 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
         ts_method = TS_PATCH;
         break;
     default:
-    ts_method = TS_GET;
+        ts_method = TS_GET;
         break;
     }
     TSUriElems params;
