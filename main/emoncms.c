@@ -117,6 +117,7 @@ void emoncms_post_task(void *arg)
         {
             // try again as long as a message from
             pub_msg = ts_serial_pubmsg(100);
+            vTaskDelay(100/portTICK_PERIOD_MS);
         }
 
         //esp_netif_ip_info_t ip_info;
