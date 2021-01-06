@@ -35,6 +35,11 @@ void can_setup();
 void can_receive_task(void *arg);
 
 /**
+ * Thread performing regular requests to other devices using ISO-TP
+ */
+void isotp_task(void *arg);
+
+/**
  * Get data from MPPT connected via CAN bus and convert it to JSON
  *
  * Caution: This function is currently not thread-safe and could be changed while reading it.

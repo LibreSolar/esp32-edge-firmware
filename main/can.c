@@ -21,10 +21,27 @@
 #include "driver/can.h"
 #include "driver/gpio.h"
 
+#include "../lib/isotp/isotp.h"
+#include "../lib/isotp/isotp_defines.h"
+
+static const char *TAG = "can";
+
 bool update_bms_received = false;
 bool update_mppt_received = false;
 
 #if CONFIG_THINGSET_CAN
+
+#define ISOTP_BUFSIZE 512
+
+/* Alloc IsoTpLink statically in RAM */
+static IsoTpLink isotp_link;
+
+/* Alloc send and receive buffer statically in RAM */
+static uint8_t isotp_recv_buf[ISOTP_BUFSIZE];
+static uint8_t isotp_send_buf[ISOTP_BUFSIZE];
+
+uint32_t can_addr_client = 0xF1;     // this device
+uint32_t can_addr_server = 0x14;     // select MPPT or BMS
 
 // buffer for JSON string generated from received data objects via CAN
 static char json_buf[500];
@@ -101,7 +118,8 @@ static int generate_json_string(char *buf, size_t len, DataObject *objs, size_t 
         switch (objs[i].raw_data[0]) {
             case CAN_TS_T_TRUE:
             case CAN_TS_T_FALSE:
-                pos += snprintf(&buf[pos], len - pos, "%d", (objs[i].raw_data[0] == CAN_TS_T_TRUE) ? 1 : 0);
+                pos += snprintf(&buf[pos], len - pos, "%d",
+                    (objs[i].raw_data[0] == CAN_TS_T_TRUE) ? 1 : 0);
                 break;
             case CAN_TS_T_POS_INT32:
                 value_abs =
@@ -160,7 +178,6 @@ static int generate_json_string(char *buf, size_t len, DataObject *objs, size_t 
     return pos;
 }
 
-
 char *get_mppt_json_data()
 {
     generate_json_string(json_buf, sizeof(json_buf),
@@ -184,66 +201,103 @@ void can_setup()
     gpio_set_level(CONFIG_GPIO_CAN_STB, 0);
 #endif
 
-    if (can_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
-        printf("CAN driver installed\n");
-    }
-    else {
-        printf("Failed to install CAN driver\n");
+    if (can_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to install CAN driver");
         return;
     }
 
-    if (can_start() == ESP_OK) {
-        printf("CAN driver started\n");
-    }
-    else {
-        printf("Failed to start CAN driver\n");
+    if (can_start() != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start CAN driver");
         return;
     }
+
+    /* Initialize link with the CAN ID we send with */
+    isotp_init_link(&isotp_link, can_addr_server << 8 | can_addr_client | 0x1ada << 16,
+        isotp_send_buf, sizeof(isotp_send_buf), isotp_recv_buf, sizeof(isotp_recv_buf));
 }
 
 void can_receive_task(void *arg)
 {
     can_message_t message;
-    //unsigned int msg_priority;        // currently not used
-    unsigned int node_id;
-    unsigned int data_object_id;
+    unsigned int device_addr;
+    unsigned int data_node_id;
+
+    uint8_t payload[500];
 
     while (1) {
         if (can_receive(&message, pdMS_TO_TICKS(10000)) == ESP_OK) {
 
-            // ThingSet publication message format: https://thingset.github.io/spec/can
-            //msg_priority = message.identifier >> 26;
-            node_id = message.identifier & 0x000000FF;
-            data_object_id = (message.identifier >> 8) & 0x000000FF;
+            /* checking for CAN ID used to receive ISO-TP frames */
+            if (message.identifier == (can_addr_client << 8 | can_addr_server | 0x1ada << 16)) {
+                ESP_LOGI(TAG, "ISO TP msg part received");
+                isotp_on_can_message(&isotp_link, message.data, message.data_length_code);
 
-            if (node_id == 0) {
-                for (int i = 0; i < sizeof(data_obj_bms)/sizeof(DataObject); i++) {
-                    if (data_obj_bms[i].id == data_object_id) {
-                        memcpy(data_obj_bms[i].raw_data, message.data, message.data_length_code);
-                        data_obj_bms[i].len = message.data_length_code;
+                /* process multiple frame transmissions and timeouts */
+                isotp_poll(&isotp_link);
+
+                /* extract received data */
+                uint16_t out_size;
+                int ret = isotp_receive(&isotp_link, payload, sizeof(payload) - 1, &out_size);
+                if (ret == ISOTP_RET_OK) {
+                    payload[out_size] = '\0';
+                    ESP_LOGI(TAG, "Received %d bytes via ISO-TP: %s", out_size, payload);
+                    /* ToDo: handle received message */
+                }
+            }
+            else {
+                // ThingSet publication message format: https://thingset.github.io/spec/can
+                device_addr = message.identifier & 0x000000FF;
+                data_node_id = (message.identifier >> 8) & 0x0000FFFF;
+
+                if (device_addr == 0) {
+                    for (int i = 0; i < sizeof(data_obj_bms) / sizeof(DataObject); i++) {
+                        if (data_obj_bms[i].id == data_node_id) {
+                            memcpy(data_obj_bms[i].raw_data, message.data,
+                                message.data_length_code);
+                            data_obj_bms[i].len = message.data_length_code;
+                        }
+                    }
+                    update_bms_received = true;
+                }
+                else if (device_addr == 10) {
+                    for (int i = 0; i < sizeof(data_obj_mppt) / sizeof(DataObject); i++) {
+                        if (data_obj_mppt[i].id == data_node_id) {
+                            memcpy(data_obj_mppt[i].raw_data, message.data,
+                                message.data_length_code);
+                            data_obj_mppt[i].len = message.data_length_code;
+                        }
+                    }
+                    update_mppt_received = true;
+                }
+
+                printf("CAN device addr %u, data node 0x%.2x = 0x", device_addr, data_node_id);
+                if (!(message.flags & CAN_MSG_FLAG_RTR)) {
+                    for (int i = 0; i < message.data_length_code; i++) {
+                        printf("%.2x", message.data[i]);
                     }
                 }
-                update_bms_received = true;
+                printf("\n");
             }
-            else if (node_id == 10) {
-                for (int i = 0; i < sizeof(data_obj_mppt)/sizeof(DataObject); i++) {
-                    if (data_obj_mppt[i].id == data_object_id) {
-                        memcpy(data_obj_mppt[i].raw_data, message.data, message.data_length_code);
-                        data_obj_mppt[i].len = message.data_length_code;
-                    }
-                }
-                update_mppt_received = true;
-            }
-
-            printf("CAN msg node %u, data object 0x%.2x = 0x",
-                node_id, data_object_id);
-            if (!(message.flags & CAN_MSG_FLAG_RTR)) {
-                for (int i = 0; i < message.data_length_code; i++) {
-                    printf("%.2x", message.data[i]);
-                }
-            }
-            printf("\n");
         }
+    }
+}
+
+/* dummy task to send regular requests for testing */
+void isotp_task(void *arg)
+{
+    //uint8_t ts_request[] = { 0x01, 0x18, 0x70, 0xA0 };
+    uint8_t ts_request[] = "?output";
+
+    while (1) {
+
+        int ret = isotp_send(&isotp_link, ts_request, strlen((char *)ts_request));
+        if (ISOTP_RET_OK == ret) {
+            printf("ISOTP Send OK\n");
+        } else {
+            printf("ISOTP Send ERROR\n");
+        }
+
+        vTaskDelay(3000 / portTICK_PERIOD_MS);
     }
 }
 
