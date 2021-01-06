@@ -62,7 +62,7 @@ typedef struct {
     char *ts_device_id;
     char *ts_name;
     //function pointer to send requests to device, abstracting underlying connection
-    char *(*send)(char * req, uint8_t CAN_Address);     
+    char *(*send)(char * req, uint8_t CAN_Address);
 } TSDevice;
 
 /**
