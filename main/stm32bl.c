@@ -66,28 +66,17 @@ static int wait_resp()
     return ESP_FAIL;
 }
 
-int stm32bl_erase_all(uint16_t max_pages)
+int stm32bl_erase_all()
 {
+    uint8_t buf[] = { 0xFF, 0xFF };   // code for mass erase
+
     send_cmd(STM32BL_EEM);
     if (wait_resp() != STM32BL_ACK) {
         ESP_LOGE(TAG, "Erasing request failed");
         return ESP_FAIL;
     }
-    // 2 bytes for total number of pages (as uint16) to be erased and
-    // 2*max_pages bytes as index for each page
-    size_t byte_len = sizeof(uint16_t)*max_pages + 2;
-    uint8_t *buf = (uint8_t *) malloc(byte_len);
-    buf[0] = (max_pages - 1) >> 8;  // MSB of N
-    buf[1] = (max_pages - 1);       // LSB of N
-    uint16_t page_num = 0;
-    for (int i = 2; i < byte_len; i+=2) {
-        buf[i] = page_num >> 8;     // MSB of page n
-        buf[i+1] = page_num;        // LSB of page n
-        page_num++;
-    }
-    //page_num should be max_pages now
-    send_buf(buf, byte_len);
-    free(buf);
+
+    send_buf(buf, sizeof(buf));
     return wait_resp();
 }
 
@@ -161,22 +150,22 @@ int stm32bl_write(uint8_t *buf, uint32_t num_bytes, uint32_t start_addr)
 {
     send_cmd(STM32BL_WM);
     if (wait_resp() != STM32BL_ACK) {
-        ESP_LOGE(TAG, "Writing request failed");
+        ESP_LOGE(TAG, "Write request failed");
         return ESP_FAIL;
     }
 
     send_address(start_addr);
     if (wait_resp() != STM32BL_ACK) {
-        ESP_LOGE(TAG, "Adress rejected");
+        ESP_LOGE(TAG, "Start address rejected: 0x%.8x", start_addr);
         return ESP_FAIL;
     }
-    // The protocol specifies:
-    // slave gets a byte, N, which contains the number of data bytes to be received
-    // receives the user data ((N + 1) bytes) and the checksum of ALL sent bytes
-    // To use send_buf(), we have to prepend the number N
-    uint8_t * total = (uint8_t *) malloc(num_bytes + 1);
+
+    // The bootloader expects to receive (num_bytes - 1) as the first byte, followed by up to 256
+    // bytes of data
+    uint8_t *total = (uint8_t *)malloc(num_bytes + 1);
     total[0] = num_bytes - 1;
     xthal_memcpy(total + 1, buf, num_bytes);
+
     send_buf(total, num_bytes + 1);
     free(total);
     return wait_resp();
@@ -217,13 +206,13 @@ int stm32bl_get_id()
     return ESP_FAIL;
 }
 
-uint16_t stm32bl_get_page_num(int chip)
+uint16_t stm32bl_get_page_count(int chip)
 {
     switch(chip) {
-        case STM32L0xx:
-            return L0x_FLASH_PAGE_NUM;
-        case STM32G4xx:
-            return G4x_FLASH_PAGE_NUM;
+        case STM32L0XX:
+            return STM32L0XX_FLASH_PAGE_COUNT;
+        case STM32G4XX:
+            return STM32G4XX_FLASH_PAGE_COUNT;
         default:
             return 0;
     }
@@ -232,10 +221,10 @@ uint16_t stm32bl_get_page_num(int chip)
 uint16_t stm32bl_get_page_size(int chip)
 {
     switch(chip) {
-        case STM32L0xx:
-            return L0x_FLASH_PAGE_SIZE;
-        case STM32G4xx:
-            return G4x_FLASH_PAGE_SIZE;
+        case STM32L0XX:
+            return STM32L0XX_FLASH_PAGE_SIZE;
+        case STM32G4XX:
+            return STM32G4XX_FLASH_PAGE_SIZE;
         default:
             return 0;
     }
