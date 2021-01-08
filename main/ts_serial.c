@@ -287,11 +287,11 @@ int ts_serial_scan_device_info(TSDevice *device)
     return 0;
 }
 
-int ts_serial_ota(uint8_t *buf, size_t len)
+int ts_serial_ota(int chip_type)
 {
     ts_serial_request("!exec/bootloader-stm\n", 100);
     ts_serial_response_clear();
-
+    
     // prevent further UART access in RX thread
     if (xSemaphoreTake(uart_lock, pdMS_TO_TICKS(100)) == pdFALSE) {
         // this is bad and should not happen, as we already started the bootloader now
@@ -302,13 +302,44 @@ int ts_serial_ota(uint8_t *buf, size_t len)
     vTaskDelay(pdMS_TO_TICKS(200));
     uart_flush(uart_num);
     uart_set_parity(uart_num, UART_PARITY_EVEN);
-
+    uint32_t address = STM32_START_ADDR;
     // read some information and reset the device
     ESP_LOGI(TAG, "STM32BL init: 0x%x", stm32bl_init());
     ESP_LOGI(TAG, "STM32BL version: 0x%x", stm32bl_get_version());
     ESP_LOGI(TAG, "STM32BL pid: 0x%x", stm32bl_get_id());
-    ESP_LOGI(TAG, "STM32BL go to start: 0x%x", stm32bl_go(STM32_START_ADDR));
+    ESP_LOGI(TAG, "STM32BL erase all: 0x%x", stm32bl_erase_all(stm32bl_get_page_num(chip_type)));
 
+    uint32_t bytes_read = 0;
+    uint16_t frame_size = stm32bl_get_page_size(chip_type);
+    uint8_t buf[frame_size];
+
+    FILE * f = fopen("/stm_ota/firmware.bin", "r");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open STM image");
+        ESP_LOGI(TAG, "STM32BL go to start: 0x%x", stm32bl_go(STM32_START_ADDR));
+        uart_set_parity(uart_num, UART_PARITY_DISABLE);
+        xSemaphoreGive(uart_lock);
+        return ESP_FAIL;
+    }
+    //erase as late as possible
+    ESP_LOGI(TAG, "STM32BL erase all: 0x%x", stm32bl_erase_all(stm32bl_get_page_num(chip_type)));
+    bytes_read = fread(buf, 1, frame_size, f);
+    ESP_LOGI(TAG, "Read %d bytes", bytes_read);
+    while(bytes_read != EOF) {
+        if (stm32bl_write(buf, bytes_read, address) != STM32BL_ACK) {
+            ESP_LOGE(TAG, "writing failed");
+            ESP_LOGI(TAG, "STM32BL go to start: 0x%x", stm32bl_go(STM32_START_ADDR));
+            uart_set_parity(uart_num, UART_PARITY_DISABLE);
+            xSemaphoreGive(uart_lock);
+            return ESP_FAIL;
+        }
+        address += bytes_read;
+        bytes_read = fread(buf, 1, frame_size, f);
+        ESP_LOGI(TAG, "Read %d bytes", bytes_read);
+    };
+    fclose(f);
+    
+    ESP_LOGI(TAG, "STM32BL go to start: 0x%x", stm32bl_go(address));
     uart_set_parity(uart_num, UART_PARITY_DISABLE);
     xSemaphoreGive(uart_lock);
 

@@ -227,7 +227,7 @@ static esp_err_t ts_handler(httpd_req_t *req)
 static esp_err_t ota_start_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/plain");
-    if (ts_serial_ota(0, 0) != ESP_FAIL) {
+    if (ts_serial_ota() != ESP_FAIL) {
         httpd_resp_sendstr(req, "OTA successful.");
     }
     else {

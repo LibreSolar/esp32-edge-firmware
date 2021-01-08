@@ -82,6 +82,6 @@ int ts_serial_scan_device_info(TSDevice *device);
  *
  * Uses the STM32 bootloader via UART. The binary must be stored at the provided address.
  */
-int ts_serial_ota(uint8_t *buf, size_t len);
+int ts_serial_ota();
 
 #endif /* SERIAL_H_ */

@@ -26,8 +26,19 @@
 #define STM32BL_RP      0x82    /* Readout Protect command */
 #define STM32BL_RUP     0x92    /* Readout Unprotect command */
 
+enum CHIP_TYPE{
+    STM32L0xx,
+    STM32G4xx
+};
+
+#define L0x_FLASH_PAGE_SIZE     ((uint16_t)128U)
+#define L0x_FLASH_PAGE_NUM      ((uint16_t) 1536U)
+
+#define G4x_FLASH_PAGE_SIZE     ((uint16_t)2048U)
+#define G4x_FLASH_PAGE_NUM      ((uint16_t) 256U)
+
 /* STM32 code start address (must be changed if custom bootloader is used */
-#define STM32_START_ADDR        0x08000000
+#define STM32_START_ADDR        0x8000000
 
 /**
  * Get bootloader version
@@ -44,6 +55,32 @@ int stm32bl_get_version();
 int stm32bl_get_id();
 
 /**
+ * Send unprotect write memory command
+ *
+ * @return
+ *      - ESP_FAIL in case of communication error
+ *      - STM32BL_ACK if erase was successful
+ */
+int stm32bl_unprotect_write();
+
+/**
+ * Send unprotect read memory command
+ *
+ * @return
+ *      - ESP_FAIL in case of communication error
+ *      - STM32BL_ACK if erase was successful
+ */
+int stm32bl_unprotect_read();
+
+/**
+ * Send protect read memory command
+ *
+ * @return
+ *      - ESP_FAIL in case of communication error
+ *      - STM32BL_ACK if erase was successful
+ */
+int stm32bl_protect_read();
+/**
  * Global erase of flash
  *
  * @return
@@ -51,7 +88,7 @@ int stm32bl_get_id();
  *      - STM32BL_ACK if erase was successful
  *      - STM32BL_NACK if erase was not successful
  */
-int stm32bl_erase_all();
+int stm32bl_erase_all(uint16_t max_pages);
 
 /**
  * Read from flash memory
@@ -79,7 +116,7 @@ int stm32bl_read(uint8_t *buf, uint8_t num_bytes, uint32_t start_addr);
  *      - STM32BL_ACK if reading was successful
  *      - STM32BL_NACK if reading was not successful
  */
-int stm32bl_write(uint8_t *buf, uint8_t num_bytes, uint32_t start_addr);
+int stm32bl_write(uint8_t *buf, uint32_t num_bytes, uint32_t start_addr);
 
 /**
  * Go to address (to start program)
@@ -102,5 +139,27 @@ int stm32bl_go(uint32_t addr);
  *      - STM32BL_NACK if reading was not successful
  */
 int stm32bl_init();
+
+/**
+ * Get the maximum number of pages for the selected chip
+ * 
+ * @param chip The chip type as coded in enum CHIP_TYPE
+ *
+ * @return
+ *      - number of pages
+ *      - 0 for unknown chip
+ */
+uint16_t stm32bl_get_page_num(int chip);
+
+/**
+ * Get the page size in kByte for the selected chip
+ *
+ * @param chip The chip type as coded in enum CHIP_TYPE
+ * 
+ * @return
+ *      - Size of Page
+ *      - 0 for unknown chip
+ */
+uint16_t stm32bl_get_page_size(int chip);
 
 #endif /* STM32BL_H_ */
