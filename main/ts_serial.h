@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#define OTA_MAX_RETRY 3
+
 /**
  * Initiate the UART interface, event groups and semaphores.
  *
@@ -80,8 +82,12 @@ int ts_serial_scan_device_info(TSDevice *device);
 /**
  * Start over-the-air firmware update (OTA)
  *
- * Uses the STM32 bootloader via UART. The binary must be stored at the provided address.
+ * Uses the STM32 bootloader via UART. The binary must be stored in the designated spiffs partition.
+ *
+ * \param flash_size The flash size for the target MCU in bytes
+ *
+ * \param page_size The size of each page in bytes
  */
-int ts_serial_ota();
+int ts_serial_ota(int flash_size, int page_size);
 
 #endif /* SERIAL_H_ */

@@ -26,19 +26,15 @@
 #define STM32BL_RP      0x82    /* Readout Protect command */
 #define STM32BL_RUP     0x92    /* Readout Unprotect command */
 
-enum CHIP_TYPE{
-    STM32L0XX,
-    STM32G4XX
-};
-
-#define STM32L0XX_FLASH_PAGE_SIZE    128U
-#define STM32L0XX_FLASH_PAGE_COUNT   1536U
-
-#define STM32G4XX_FLASH_PAGE_SIZE    2048U
-#define STM32G4XX_FLASH_PAGE_COUNT   256U
-
 /* STM32 code start address (must be changed if custom bootloader is used */
 #define STM32_START_ADDR        0x08000000
+
+/**
+ * Resets the device after flashing
+ *
+ * @return ESP_FAIL in case of error
+ */
+int stm32bl_reset_device();
 
 /**
  * Get bootloader version
@@ -89,7 +85,7 @@ int stm32bl_protect_read();
  *      - STM32BL_ACK if erase was successful
  *      - STM32BL_NACK if erase was not successful
  */
-int stm32bl_erase_all();
+int stm32bl_erase_all(uint16_t max_pages);
 
 /**
  * Read from flash memory
@@ -140,27 +136,5 @@ int stm32bl_go(uint32_t addr);
  *      - STM32BL_NACK if reading was not successful
  */
 int stm32bl_init();
-
-/**
- * Get the maximum number of pages for the selected chip
- *
- * @param chip The chip type as coded in enum CHIP_TYPE
- *
- * @return
- *      - number of pages
- *      - 0 for unknown chip
- */
-uint16_t stm32bl_get_page_count(int chip);
-
-/**
- * Get the page size in kByte for the selected chip
- *
- * @param chip The chip type as coded in enum CHIP_TYPE
- *
- * @return
- *      - Size of Page
- *      - 0 for unknown chip
- */
-uint16_t stm32bl_get_page_size(int chip);
 
 #endif /* STM32BL_H_ */

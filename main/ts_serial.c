@@ -287,65 +287,77 @@ int ts_serial_scan_device_info(TSDevice *device)
     return 0;
 }
 
-int ts_serial_ota(int chip_type)
+static int finish_ota(FILE *f, int ret)
+{
+    if (f != NULL) {
+        fclose(f);
+    }
+    // maybe this should be executed only for ret == ESP_OK
+    stm32bl_reset_device();
+    uart_set_parity(uart_num, UART_PARITY_DISABLE);
+    xSemaphoreGive(uart_lock);
+    return ret;
+}
+
+int ts_serial_ota(int flash_size, int page_size)
 {
     int ret = ESP_OK;
+    uint16_t pages = flash_size / page_size;
 
     ts_serial_request("!exec/bootloader-stm\n", 100);
     ts_serial_response_clear();
 
     // prevent further UART access in RX thread
-    if (xSemaphoreTake(uart_lock, pdMS_TO_TICKS(100)) == pdFALSE) {
-        // this is bad and should not happen, as we already started the bootloader now
-        ESP_LOGE(TAG, "Could not take semaphore uart_lock");
-        return ESP_FAIL;
+    int retry = 0;
+    while (xSemaphoreTake(uart_lock, pdMS_TO_TICKS(100)) != pdTRUE ) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+        retry++;
+        if (retry > OTA_MAX_RETRY) {
+             // this is bad and should not happen, as we already started the bootloader now
+            ESP_LOGE(TAG, "Could not take semaphore uart_lock");
+            return ESP_FAIL;
+        }
     }
-
     vTaskDelay(pdMS_TO_TICKS(200));
     uart_flush(uart_num);
     uart_set_parity(uart_num, UART_PARITY_EVEN);
 
-    uint32_t address = STM32_START_ADDR;
-    // read some information and reset the device
-    ESP_LOGI(TAG, "STM32BL init: 0x%x", stm32bl_init());
-    ESP_LOGI(TAG, "STM32BL version: 0x%x", stm32bl_get_version());
-    ESP_LOGI(TAG, "STM32BL pid: 0x%x", stm32bl_get_id());
+    ret = stm32bl_init();
+    if(ret != STM32BL_ACK) {
+        ESP_LOGE(TAG, "Init failed with 0x%x", ret);
+        return finish_ota(NULL, ESP_FAIL);
+    }
+    ESP_LOGD(TAG, "STM32BL version: 0x%x", stm32bl_get_version());
+    ESP_LOGD(TAG, "STM32BL pid: 0x%x", stm32bl_get_id());
 
     uint32_t bytes_read = 0;
-    uint16_t frame_size = stm32bl_get_page_size(chip_type);
-    uint8_t buf[frame_size];
+    uint8_t buf[page_size];
 
     FILE * f = fopen("/stm_ota/firmware.bin", "r");
     if (f == NULL) {
         ESP_LOGE(TAG, "Failed to open STM image");
-        ret = ESP_FAIL;
-        goto out;
+        return finish_ota(f, ESP_FAIL);
     }
 
-    ESP_LOGI(TAG, "STM32BL mass-erase: 0x%x", stm32bl_erase_all());
+    ret = stm32bl_erase_all(pages);
+    if (ret != STM32BL_ACK) {
+        ESP_LOGE(TAG, "Mass erase failed");
+        return finish_ota(f, ESP_FAIL);
+    }
 
+    uint32_t address = STM32_START_ADDR;
     while (true) {
-        bytes_read = fread(buf, 1, frame_size, f);
-        //ESP_LOGI(TAG, "Read %d bytes of firmware file", bytes_read);
+        bytes_read = fread(buf, 1, page_size, f);
         if (bytes_read == EOF || bytes_read == 0) {
-            ESP_LOGI(TAG, "Reading and sending of firmware file finished");
-            goto out;
+            ESP_LOGD(TAG, "Reading and sending of firmware file finished");
+            return finish_ota(f, ESP_OK);
         }
         if (stm32bl_write(buf, bytes_read, address) != STM32BL_ACK) {
-            ESP_LOGE(TAG, "Writing failed failed");
-            ret = ESP_FAIL;
-            goto out;
+            ESP_LOGE(TAG, "Writing failed");
+            return finish_ota(f, ESP_FAIL);
         }
         address += bytes_read;
     };
-
-out:
-    fclose(f);
-    ESP_LOGI(TAG, "STM32BL go to start: 0x%x", stm32bl_go(address));
-    uart_set_parity(uart_num, UART_PARITY_DISABLE);
-    xSemaphoreGive(uart_lock);
-
-    return ret;
 }
 
 #endif
