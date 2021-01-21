@@ -24,17 +24,13 @@ const char *TAG = "stm32bl";
 
 #define UART_TIMEOUT_MS 100
 
-/* Reset code for ARMv7-M (Cortex-M3) and ARMv6-M (Cortex-M0)
- * see ARMv7-M or ARMv6-M Architecture Reference Manual (table B3-8)
- * or "The definitive guide to the ARM Cortex-M3", section 14.4.
- */
 static const uint8_t stm_reset_code[] = {
-	0x01, 0x49,		// ldr     r1, [pc, #4] ; (<AIRCR_OFFSET>)
-	0x02, 0x4A,		// ldr     r2, [pc, #8] ; (<AIRCR_RESET_VALUE>)
-	0x0A, 0x60,		// str     r2, [r1, #0]
-	0xfe, 0xe7,		// endless: b endless
-	0x0c, 0xed, 0x00, 0xe0,	// .word 0xe000ed0c <AIRCR_OFFSET> = NVIC AIRCR register address
-	0x04, 0x00, 0xfa, 0x05	// .word 0x05fa0004 <AIRCR_RESET_VALUE> = VECTKEY | SYSRESETREQ
+    0x01, 0x49,		        // ldr     r1, [pc, #4] ; (<AIRCR_OFFSET>)
+    0x02, 0x4A,		        // ldr     r2, [pc, #8] ; (<AIRCR_RESET_VALUE>)
+    0x0A, 0x60,		        // str     r2, [r1, #0]
+    0xfe, 0xe7,		        // endless: b endless
+    0x0c, 0xed, 0x00, 0xe0,	// .word 0xe000ed0c <AIRCR_OFFSET> = NVIC AIRCR register address
+    0x04, 0x00, 0xfa, 0x05	// .word 0x05fa0004 <AIRCR_RESET_VALUE> = VECTKEY | SYSRESETREQ
 };
 
 
@@ -67,11 +63,10 @@ static inline void send_cmd(uint8_t cmd)
 
 static void send_address(uint32_t addr)
 {
-    /* must be 32bit aligned */
-	if (addr & 0x3) {
-		ESP_LOGE(TAG, "Error: address must be 4 byte aligned\n");
+    if (addr % 4 != 0) {
+        ESP_LOGE(TAG, "Error: address must be 4 byte aligned");
         return;
-	}
+    }
     uint8_t buf[] = { addr >> 24, (addr >> 16) & 0xFF, (addr >> 8) & 0XFF, addr & 0xFF };
     send_buf(buf, sizeof(buf));
 }
@@ -120,32 +115,29 @@ int stm32bl_go(uint32_t addr)
 
 static int stm32bl_run_raw_code(uint32_t target_address, const uint8_t *code, uint32_t code_size)
 {
-	uint32_t stack_le = 0x20002000;
-	uint32_t code_address_le = target_address + 8 + 1; // thumb mode address (!)
-	uint32_t length = code_size + 8;
-	uint8_t *mem, *pos;
-	uint32_t address;
+    uint32_t stack_addr = STM32_RAM_START_ADDR;
+    uint32_t code_address= target_address + 8 + 1;
+    uint32_t length = code_size + 8;
+    uint8_t *mem;
 
-	/* Must be 32-bit aligned */
-	if (target_address & 0x3) {
-		ESP_LOGE(TAG, "Error: code address must be 4 byte aligned\n");
-		return ESP_FAIL;
-	}
+    if (target_address % 4 != 0) {
+        ESP_LOGE(TAG, "Error: code address must be 4 byte aligned");
+        return ESP_FAIL;
+    }
 
-	mem = malloc(length);
-	if (!mem)
-		return ESP_FAIL;
+    mem = malloc(length);
+    if (!mem) {
+        return ESP_FAIL;
+    }
 
-	memcpy(mem, &stack_le, sizeof(uint32_t));
-	memcpy(mem + 4, &code_address_le, sizeof(uint32_t));
-	memcpy(mem + 8, code, code_size);
+    memcpy(mem, &stack_addr, sizeof(uint32_t));
+    memcpy(mem + 4, &code_address, sizeof(uint32_t));
+    memcpy(mem + 8, code, code_size);
 
-	pos = mem;
-	address = target_address;
-    stm32bl_write(pos, length, address);
+    stm32bl_write(mem, length, target_address);
 
-	free(mem);
-	return stm32bl_go(target_address);
+    free(mem);
+    return stm32bl_go(target_address);
 }
 
 int stm32bl_reset_device()
@@ -211,7 +203,7 @@ int stm32bl_read(uint8_t *buf, uint8_t num_bytes, uint32_t addr)
 
 int stm32bl_write(uint8_t *buf, uint32_t num_bytes, uint32_t start_addr)
 {
-    if(num_bytes % 4 != 0) {
+    if (num_bytes % 4 != 0) {
         ESP_LOGE(TAG, "Data is not aligned");
         return ESP_FAIL;
     }
@@ -227,8 +219,6 @@ int stm32bl_write(uint8_t *buf, uint32_t num_bytes, uint32_t start_addr)
         return ESP_FAIL;
     }
 
-    // The bootloader expects to receive (num_bytes - 1) as the first byte, followed by up to 256
-    // bytes of data
     uint8_t *total = (uint8_t *)malloc(num_bytes + 1);
     total[0] = num_bytes - 1;
     xthal_memcpy(total + 1, buf, num_bytes);
@@ -254,7 +244,6 @@ int stm32bl_get_version()
 
     return ESP_FAIL;
 }
-
 
 int stm32bl_get_id()
 {

@@ -231,9 +231,8 @@ static esp_err_t ts_handler(httpd_req_t *req)
 static esp_err_t ota_start_handler(httpd_req_t *req)
 {
     char *uri = (char *) heap_caps_malloc(13, MALLOC_CAP_8BIT);
-    strncpy(uri, req->uri+url_offset_ota, 7);
-    strcpy(uri+7, "/info");
-    ESP_LOGI(TAG, "URL: %s", uri);
+    strncpy(uri, req->uri + url_offset_ota, 7);
+    strcpy(uri + 7, "/info");
 
     TSResponse *res = ts_execute(uri, NULL, HTTP_GET);
     if (res == NULL) {

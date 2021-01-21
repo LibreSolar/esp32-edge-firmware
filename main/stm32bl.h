@@ -27,7 +27,8 @@
 #define STM32BL_RUP     0x92    /* Readout Unprotect command */
 
 /* STM32 code start address (must be changed if custom bootloader is used */
-#define STM32_START_ADDR        0x08000000
+#define STM32_FLASH_START_ADDR        0x08000000
+#define STM32_RAM_START_ADDR    0x20002000
 
 /**
  * Resets the device after flashing

@@ -8,12 +8,12 @@
 #define SERIAL_H_
 
 #include <ts_client.h>
-
+#include "esp_err.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
-#define OTA_MAX_RETRY 3
+#define OTA_UART_LOCK_TIMEOUT 500
 
 /**
  * Initiate the UART interface, event groups and semaphores.
@@ -88,6 +88,6 @@ int ts_serial_scan_device_info(TSDevice *device);
  *
  * \param page_size The size of each page in bytes
  */
-int ts_serial_ota(int flash_size, int page_size);
+esp_err_t ts_serial_ota(int flash_size, int page_size);
 
 #endif /* SERIAL_H_ */
