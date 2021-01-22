@@ -41,6 +41,9 @@ export default {
     clearInterval(this.timer);
     this.timer = setInterval(this.getData, 3000);
   },
+  beforeUnmount() {
+    clearInterval(this.timer);
+  },
   methods: {
     updateGraph() {
       let data = []

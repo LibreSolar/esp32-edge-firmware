@@ -2,8 +2,8 @@ module.exports = {
   productionSourceMap: false,
   devServer: {
     proxy: {
-      '/ts': {
-        target: 'http://192.168.1.15',
+      '/api/v1/ts': {
+        target: 'http://192.168.0.61',
         changeOrigin: true,
         ws: true
       }

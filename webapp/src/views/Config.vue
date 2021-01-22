@@ -20,15 +20,39 @@
               </v-layout>
             </v-container>
           </v-card-text>
-          <v-btn color="primary" @click="set_color">
-            <v-icon left>save_alt</v-icon> Apply
+          <v-container class="text-center pa-md-6">
+          <v-btn color="primary" @click="send_values">
+            <v-icon left>mdi-checkbox-marked-circle</v-icon> Apply
           </v-btn>
-          <v-btn @click="set_color">
-            <v-icon left>clear</v-icon> Cancel
+          <v-btn @click="reset_values">
+            <v-icon left>mdi-cancel</v-icon> Cancel
           </v-btn>
+          </v-container>
         </v-card>
       </v-flex>
     </v-layout>
+    <v-dialog v-model="dialog" width="500">
+      <v-card>
+        <v-card-title class="headline red lighten-2">
+          Something went wrong!
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text>
+        This might happen if some of the values are not plausible, the MCU checks new values prior to saving. Please refresh the page to update the values and see what has been written!
+        </v-card-text>
+        <v-divider></v-divider>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            text
+            @click="dialog = false"
+          >
+            Ok
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+  </v-dialog>
   </v-container>
 </template>
 
@@ -36,33 +60,48 @@
 export default {
   data() {
     return {
-      data_objects: null
+      data_objects: null,
+      base_data: null,
+      diff: {},
+      dialog: false
     }
   },
-  mounted() {
+  created() {
+    let id = this.$store.state.active_device_id
     this.$ajax
-      .get('/api/conf')
-      .then(data => {
-        this.data_objects = data.data
+      .get("api/v1/ts/" + id + "/conf")
+      .then(res => {
+        this.data_objects = res.data
+        // keep a copy so we can make a diff to reduce size,
+        // writing to eeprom in the MCU takes long...
+        // this only works with basic datatypes, not with Date() etc.
+        this.base_data = JSON.parse(JSON.stringify(res.data))
       })
       .catch(error => {
         console.log(error)
       })
   },
   methods: {
-    set_color: function() {
+    reset_values: function() {
+      this.data_objects = this.base_data
+    },
+    send_values: function() {
+      let id =  this.$store.state.active_device_id
+      Object.keys(this.data_objects).forEach(function(key) {
+        if(this.base_data[key] != this.data_objects[key]){
+          this.diff[key] = this.data_objects[key]
+        }
+      }, this)
+      console.log(this.diff)
       this.$ajax
-        .post("/api/v1/light/brightness", {
-          red: this.red,
-          green: this.green,
-          blue: this.blue
-        })
-        .then(data => {
-          console.log(data);
-        })
-        .catch(error => {
-          console.log(error);
-        });
+      .patch("api/v1/ts/" + id + "/conf", this.diff)
+      .then(res => {
+          this.base_data = this.data_objects
+      })
+      .catch(error => {
+        this.dialog = true
+        //console.log(error)
+      })
     }
   }
 };

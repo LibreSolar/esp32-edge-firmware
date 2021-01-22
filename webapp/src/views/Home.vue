@@ -33,14 +33,15 @@ export default {
     }
   },
   mounted() {
+    let id = this.$store.state.active_device_id
     this.$ajax
-      .get('/ts/serial/info')
-      .then(data => {
-        this.manufacturer = data.data.Manufacturer;
-        this.device_id = data.data.DeviceID;
-        this.device_type = data.data.DeviceType;
-        this.hw_version = data.data.HardwareVersion;
-        this.fw_version = data.data.FirmwareVersion;
+      .get("api/v1/ts/" + id + "/info")
+      .then(res => {
+        this.manufacturer = res.data.Manufacturer;
+        this.device_id = res.data.DeviceID;
+        this.device_type = res.data.DeviceType;
+        this.hw_version = res.data.HardwareVersion;
+        this.fw_version = res.data.FirmwareVersion;
       })
       .catch(error => {
         console.log(error);

@@ -8,7 +8,19 @@
     >
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-spacer></v-spacer>
-
+      <v-menu offset-y>
+        <template v-slot:activator=" {on, attrs}">
+          <v-btn color="secondary" dark v-bind="attrs" v-on="on">
+            {{ active_device }}
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item v-for="key in Object.keys($store.state.devices)" :key="key" @click="change_device(key)">
+            <v-list-item-title v-text="key"></v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+      <v-spacer></v-spacer>
       <v-btn
         href="https://github.com/LibreSolar/data-manager-firmware"
         target="_blank"
@@ -40,7 +52,7 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-main class="accent">
+    <v-main class="accent" v-if="!$store.state.loading">
       <v-container fluid fill-height>
         <router-view/>
       </v-container>
@@ -57,6 +69,22 @@
 <script>
 export default {
   name: 'App',
+  created() {
+    this.$ajax
+      .get('api/v1/ts/')
+      .then(res => {
+        this.$store.state.devices = res.data
+        if (res.data) {
+          this.$store.state.active_device = Object.keys(res.data)[0]
+          this.$store.state.active_device_id = Object.values(res.data)[0]
+          this.active_device = "Device: " + this.$store.state.active_device
+          this.$store.state.loading = false
+        }
+      })
+      .catch(error => {
+        console.log(error);
+      });
+  },
   data () {
     return {
       drawer: true,
@@ -68,7 +96,14 @@ export default {
         { title: 'Data Log', icon: 'mdi-chart-bar' },
       ],
       right: null,
+      active_device: "No Devices connected...",
     }
   },
+  methods: {
+    change_device: function(key) {
+      this.$store.state.active_device = key
+      this.$store.state.active_device_id = this.$store.state.devices[key]
+    }
+  }
 };
 </script>
