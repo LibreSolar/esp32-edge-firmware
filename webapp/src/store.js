@@ -8,7 +8,10 @@ export default new Vuex.Store({
   state: {
     chart_data: {},
     chart_data_keys: [],
-    loading: false
+    loading: true,
+    devices: {},
+    active_device: "",
+    active_device_id: ""
 
   },
   mutations: {
@@ -32,7 +35,7 @@ export default new Vuex.Store({
   },
   actions: {
     init_chart_data( { commit }) {
-      return axios.get("ts/serial/output")
+      return axios.get("api/v1/ts/"+ this.state.active_device_id +"/output")
         .then(data => {
           commit("init_chart_data", data.data);
         })
@@ -41,7 +44,7 @@ export default new Vuex.Store({
         })
     },
     update_chart_data({ commit }) {
-      return axios.get("ts/serial/output")
+      return axios.get("api/v1/ts/"+ this.state.active_device_id +"/output")
         .then(data => {
           commit("update_chart_data", data.data);
         })
