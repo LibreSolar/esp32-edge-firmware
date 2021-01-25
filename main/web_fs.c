@@ -34,16 +34,8 @@ static void read_hello_txt()
     ESP_LOGI(TAG, "File content:\n%s", buf);
 }
 
-esp_err_t init_fs(void)
+static esp_err_t check_response(esp_err_t ret)
 {
-    esp_vfs_spiffs_conf_t conf = {
-        .base_path = "/www",
-        .partition_label = NULL,
-        .max_files = 5,
-        .format_if_mount_failed = false
-    };
-    esp_err_t ret = esp_vfs_spiffs_register(&conf);
-
     if (ret != ESP_OK) {
         if (ret == ESP_FAIL) {
             ESP_LOGE(TAG, "Failed to mount or format filesystem");
@@ -53,10 +45,35 @@ esp_err_t init_fs(void)
             ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
         }
         return ESP_FAIL;
+    } else {
+        return ESP_OK;
     }
+}
+
+esp_err_t init_fs(void)
+{
+    esp_vfs_spiffs_conf_t www_conf = {
+        .base_path = "/www",
+        .partition_label = "website",
+        .max_files = 5,
+        .format_if_mount_failed = false
+    };
+    if(check_response(esp_vfs_spiffs_register(&www_conf)) != ESP_OK) {
+        return ESP_FAIL;
+    };
+
+    esp_vfs_spiffs_conf_t ota_conf = {
+        .base_path = "/stm_ota",
+        .partition_label = "stm_ota",
+        .max_files = 1,
+        .format_if_mount_failed = false
+    };
+    if(check_response(esp_vfs_spiffs_register(&ota_conf)) != ESP_OK) {
+        return ESP_FAIL;
+    };
 
     size_t total = 0, used = 0;
-    ret = esp_spiffs_info(NULL, &total, &used);
+    esp_err_t ret = esp_spiffs_info("website", &total, &used);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
     } else {

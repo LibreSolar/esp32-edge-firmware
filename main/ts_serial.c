@@ -15,11 +15,12 @@
 #include "freertos/event_groups.h"
 
 #include "esp_system.h"
-#include "esp_err.h"
 #include "esp_log.h"
 #include "ts_client.h"
 #include "cJSON.h"
 #include "driver/uart.h"
+
+#include "stm32bl.h"
 
 static const char *TAG = "ts_ser";
 
@@ -41,6 +42,8 @@ SemaphoreHandle_t pubmsg_buf_lock = NULL;
 /* stores incoming response messages */
 static uint8_t resp_buf[RESP_BUF_SIZE];
 SemaphoreHandle_t resp_buf_lock = NULL;
+
+SemaphoreHandle_t uart_lock = NULL;
 
 /* used UART interface */
 static const int uart_num = UART_NUM_2;
@@ -69,6 +72,9 @@ void ts_serial_setup(void)
     pubmsg_buf_lock = xSemaphoreCreateBinary();
     xSemaphoreGive(pubmsg_buf_lock);
 
+    uart_lock = xSemaphoreCreateBinary();
+    xSemaphoreGive(uart_lock);
+
     events = xEventGroupCreate();
 }
 
@@ -93,7 +99,13 @@ void ts_serial_rx_task(void *arg)
     while (true) {
         uint8_t byte;
         // wait for incoming characters
-        while (uart_read_bytes(uart_num, &byte, 1, portMAX_DELAY) == 0) {;}
+        while (uart_read_bytes(uart_num, &byte, 1, pdMS_TO_TICKS(50)) == 0) {
+            // this allows other threads to block UART read access in this thread (e.g. for
+            // firmware upgrade)
+            xSemaphoreTake(uart_lock, portMAX_DELAY);
+            xSemaphoreGive(uart_lock);
+        }
+
         if (pos == 0 && byte == '#') {
             // only store pub msg if nobody is processing previous message
             if (xSemaphoreTake(pubmsg_buf_lock, 0) == pdTRUE) {
@@ -273,4 +285,71 @@ int ts_serial_scan_device_info(TSDevice *device)
     cJSON_Delete(json_data);
     return 0;
 }
+
+esp_err_t ts_serial_ota(int flash_size, int page_size)
+{
+    int ret = ESP_FAIL;
+    uint16_t pages = flash_size / page_size;
+
+    ts_serial_request("!exec/bootloader-stm\n", 100);
+    ts_serial_response_clear();
+
+    // prevent further UART access in RX thread
+    if (xSemaphoreTake(uart_lock, pdMS_TO_TICKS(OTA_UART_LOCK_TIMEOUT)) != pdTRUE ) {
+        // this is bad and should not happen, as we already started the bootloader now
+        ESP_LOGE(TAG, "Could not take semaphore uart_lock");
+        return ret;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(200));
+    uart_flush(uart_num);
+    uart_set_parity(uart_num, UART_PARITY_EVEN);
+    uint32_t bytes_read = 0;
+    uint8_t buf[page_size];
+    FILE * f = NULL;
+
+    if (stm32bl_init() != STM32BL_ACK) {
+        ESP_LOGE(TAG, "Init failed");
+        goto out;
+    }
+
+    ESP_LOGD(TAG, "STM32BL version: 0x%x", stm32bl_get_version());
+    ESP_LOGD(TAG, "STM32BL pid: 0x%x", stm32bl_get_id());
+
+    f = fopen("/stm_ota/firmware.bin", "r");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open STM image");
+        goto out;
+    }
+
+    if (stm32bl_erase_all(pages) != STM32BL_ACK) {
+        ESP_LOGE(TAG, "Mass erase failed");
+        goto out;
+    }
+
+    uint32_t address = STM32_FLASH_START_ADDR;
+    while (true) {
+        bytes_read = fread(buf, 1, page_size, f);
+        if (bytes_read == EOF || bytes_read == 0) {
+            ESP_LOGD(TAG, "Reading and sending of firmware file finished");
+            ret = ESP_OK;
+            goto out;
+        }
+        if (stm32bl_write(buf, bytes_read, address) != STM32BL_ACK) {
+            ESP_LOGE(TAG, "Writing failed");
+            goto out;
+        }
+        address += bytes_read;
+    };
+
+out:
+    if (f != NULL) {
+        fclose(f);
+    }
+    stm32bl_reset_device();
+    uart_set_parity(uart_num, UART_PARITY_DISABLE);
+    xSemaphoreGive(uart_lock);
+    return ret;
+}
+
 #endif

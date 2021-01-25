@@ -17,9 +17,13 @@
 #include "ts_serial.h"
 #include "ts_client.h"
 
+//just temporary until we implemented a way to select the chip
+#include "stm32bl.h"
+
 static const char *TAG = "websrv";
 
-int url_base_offset;
+int url_offset_ts;
+int url_offset_ota;
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
 #define SCRATCH_BUFSIZE (10240)
@@ -202,7 +206,7 @@ static esp_err_t ts_get_devices_handler(httpd_req_t *req)
 
 static esp_err_t ts_handler(httpd_req_t *req)
 {
-    if (req->uri[url_base_offset] == '\0') {
+    if (req->uri[url_offset_ts] == '\0') {
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Resource not found");
         return ESP_OK;
     }
@@ -212,7 +216,7 @@ static esp_err_t ts_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
 
-    TSResponse *res = ts_execute(req->uri + url_base_offset, content, req->method);
+    TSResponse *res = ts_execute(req->uri + url_offset_ts, content, req->method);
     if (content != NULL) {
         heap_caps_free(content);
     }
@@ -222,6 +226,38 @@ static esp_err_t ts_handler(httpd_req_t *req)
         return ESP_OK;
     }
     return send_response(req, res);
+}
+
+static esp_err_t ota_start_handler(httpd_req_t *req)
+{
+    char *uri = (char *) heap_caps_malloc(13, MALLOC_CAP_8BIT);
+    strncpy(uri, req->uri + url_offset_ota, 7);
+    strcpy(uri + 7, "/info");
+
+    TSResponse *res = ts_execute(uri, NULL, HTTP_GET);
+    if (res == NULL) {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Device not connected");
+        return ESP_OK;
+    }
+    cJSON *info = cJSON_Parse(res->data);
+    if (info == NULL) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Unable to parse device information");
+        return ESP_OK;
+    }
+    cJSON *flash_size = cJSON_GetObjectItemCaseSensitive(info, "FlashSize_kb");
+    cJSON *page_size = cJSON_GetObjectItemCaseSensitive(info, "FlashPageSize_kb");
+
+    httpd_resp_set_type(req, "text/plain");
+
+    int ret = ts_serial_ota(flash_size->valueint, page_size->valueint);
+    if (ret != ESP_FAIL) {
+        httpd_resp_sendstr(req, "OTA successful.");
+    }
+    else {
+        httpd_resp_sendstr(req, "OTA failed.");
+    }
+    cJSON_Delete(info);
+    return ESP_OK;
 }
 
 esp_err_t start_web_server(const char *base_path)
@@ -245,7 +281,8 @@ esp_err_t start_web_server(const char *base_path)
     config.stack_size = 8*1024;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
-    url_base_offset = strlen("/api/v1/ts/");
+    url_offset_ts = strlen("/api/v1/ts/");
+    url_offset_ota = strlen("/api/v1/ota/");
 
     if (httpd_start(&server, &config) != ESP_OK) {
         ESP_LOGE(TAG, "Start server failed");
@@ -294,6 +331,14 @@ esp_err_t start_web_server(const char *base_path)
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ts_delete_uri);
+
+    httpd_uri_t ota_start_uri = {
+        .uri = "/api/v1/ota/*",
+        .method = HTTP_GET,
+        .handler = ota_start_handler,
+        .user_ctx = server_ctx
+    };
+    httpd_register_uri_handler(server, &ota_start_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {
