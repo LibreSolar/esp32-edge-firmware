@@ -73,8 +73,9 @@ export default {
     this.$ajax
       .get('api/v1/ts/')
       .then(res => {
-        this.$store.state.devices = res.data
+        console.log(res)
         if (res.data) {
+          this.$store.state.devices = res.data
           this.$store.state.active_device = Object.keys(res.data)[0]
           this.$store.state.active_device_id = Object.values(res.data)[0]
           this.active_device = "Device: " + this.$store.state.active_device

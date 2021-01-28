@@ -46,7 +46,7 @@ char *ts_get_device_list()
         cJSON_Delete(obj);
     } else {
         // hackky solution so that free() can always be called on names_string
-        const char msg[] = "No devices Connected";
+        const char msg[] = "";
         names_string = (char *) malloc(sizeof(msg)+1);
         strncpy(names_string, msg, sizeof(msg)+1);
     }
