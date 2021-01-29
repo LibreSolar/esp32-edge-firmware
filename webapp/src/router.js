@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import Home from './views/Home.vue'
 import Live from './views/Live.vue'
 import Config from './views/Config.vue'
+import Ota from './views/Ota.vue'
 
 Vue.use(Router)
 
@@ -24,6 +25,11 @@ export default new Router({
       path: '/config',
       name: 'config',
       component: Config
+    },
+    {
+      path: '/ota',
+      name: 'ota',
+      component: Ota
     }
   ]
 })
