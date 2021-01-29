@@ -52,7 +52,7 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-main class="accent" v-if="!$store.state.loading">
+    <v-main class="accent" v-if="$store.state.loading">
       <v-container fluid fill-height>
         <router-view/>
       </v-container>
