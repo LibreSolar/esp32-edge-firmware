@@ -1,3 +1,5 @@
+const CompressionPlugin = require("compression-webpack-plugin");
+
 module.exports = {
   productionSourceMap: false,
   devServer: {
@@ -26,6 +28,11 @@ module.exports = {
     output: {
       filename: '[name].js',
       chunkFilename: '[name].js',
-    }
+    },
+    plugins: [new CompressionPlugin({
+      filename: '[name][ext].gz',
+      algorithm: "gzip",
+      deleteOriginalAssets: true,
+    })]
   }
 }
