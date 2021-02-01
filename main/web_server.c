@@ -108,6 +108,13 @@ static esp_err_t common_get_handler(httpd_req_t *req)
     else {
         strlcat(filepath, req->uri, sizeof(filepath));
     }
+    set_content_type_from_file(req, filepath);
+
+    if (strstr(filepath, ".png") == NULL) {
+        httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+        strlcat(filepath, ".gz", sizeof(filepath));
+    }
+
     int fd = open(filepath, O_RDONLY, 0);
     if (fd == -1) {
         ESP_LOGE(TAG, "Failed to open file : %s", filepath);
@@ -115,8 +122,6 @@ static esp_err_t common_get_handler(httpd_req_t *req)
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file.\n");
         return ESP_FAIL;
     }
-
-    set_content_type_from_file(req, filepath);
 
     char *chunk = server_ctx->scratch;
     ssize_t read_bytes;

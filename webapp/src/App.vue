@@ -95,6 +95,7 @@ export default {
         { title: 'Configuration', href: '/config', icon: 'mdi-tune' },
         { title: 'Inout/Output', icon: 'mdi-swap-horizontal' },
         { title: 'Data Log', icon: 'mdi-chart-bar' },
+        { title: 'Firmware Upgrade', href: '/ota', icon: 'mdi-upload'}
       ],
       right: null,
       active_device: "No Devices connected...",
