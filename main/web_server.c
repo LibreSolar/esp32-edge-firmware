@@ -265,6 +265,44 @@ static esp_err_t ota_start_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+esp_err_t ota_upload_handler(httpd_req_t *req)
+{
+    if (req->content_len > 0x20000) {
+        httpd_resp_set_status(req, "413");
+        httpd_resp_sendstr(req, "Maximum size: 128 kByte");
+        return ESP_OK;
+    }
+
+    unsigned int bytes_received = 0;
+    unsigned int bytes_written = 0;
+    int buffer_size = 8*1024;
+    char * buf = malloc(buffer_size);
+    FILE *fd = fopen("/stm_ota/firmware.bin", "w");
+    if (fd == NULL) {
+        ESP_LOGE(TAG, "Failed to create file for image");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Unable to create file");
+        goto out;
+    }
+    while (req->content_len - bytes_received > 0) {
+        int chunk_size = httpd_req_recv(req, buf, buffer_size);
+        bytes_received += chunk_size;
+        ESP_LOGD(TAG, "Got chunk of %d bytes", chunk_size);
+        bytes_written = fwrite(buf, 1, chunk_size, fd);
+        ESP_LOGD(TAG, "Wrote chunk of %d bytes", bytes_written);
+        if (ferror(fd)) {
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Unable to write file");
+            goto out;
+        }
+    }
+    ESP_LOGD(TAG, "Wrote %d to flash", bytes_received);
+    httpd_resp_set_status(req, "200");
+    httpd_resp_send(req, NULL, 0);
+out:
+    free(buf);
+    fclose(fd);
+    return ESP_OK;
+}
+
 esp_err_t start_web_server(const char *base_path)
 {
     if (base_path == NULL) {
@@ -344,6 +382,15 @@ esp_err_t start_web_server(const char *base_path)
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ota_start_uri);
+
+     httpd_uri_t ota_upload_uri = {
+        .uri = "/api/v1/ota/upload",
+        .method = HTTP_POST,
+        .handler = ota_upload_handler,
+        .user_ctx = server_ctx
+    };
+    httpd_register_uri_handler(server, &ota_upload_uri);
+
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {
