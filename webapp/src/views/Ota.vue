@@ -12,6 +12,13 @@
                     </div>
                 </v-col>
             </v-row>
+            <v-row justify="center" dense>
+                <v-col cols=10>
+                    <div class="ma-auto">
+                        Current Version: {{ fw_version_old }}
+                    </div>
+                </v-col>
+            </v-row>
             <v-row justify="center">
                 <v-col cols=10 >
                     <v-file-input
@@ -78,8 +85,13 @@ export default {
         file: null,
         status: null,
         alert: false,
-        success: false
+        success: false,
+        fw_version_old: null,
+        fw_version_new: null
     }
+  },
+  mounted() {
+      this.fetch_data("old")
   },
   computed: {
       flash_disabled() {
@@ -92,13 +104,13 @@ export default {
   methods: {
       upload: function() {
           this.uploading = !this.uploading;
-          this.disable_upload_btn = true
+          this.disable("upload")
           var reader = new FileReader();
           if(!this.file) {
               this.status = "No file selected"
-              this.alert = true
+              this.show_alert()
               this.uploading = !this.uploading;
-              this.disable_upload_btn = false
+              this.enable("upload")
               return;
           }
           reader.readAsArrayBuffer(this.file);
@@ -107,44 +119,82 @@ export default {
             .post('api/v1/ota/upload', reader.result)
             .then(res => {
                 this.status = "Image upload successfull";
-                this.disable_flash_btn = false;
-                this.disable_upload_btn = false
+                this.enable("flash");
+                this.enable("upload")
                 this.uploading = !this.uploading;
-                this.alert=false
-                this.success=true
+                this.show_success()
             })
             .catch(error => {
                 this.status = "Could not upload image - Statuscode: " + error.response.status
                 this.uploading = !this.uploading;
-                this.disable_upload_btn = false
-                this.disable_flash_btn = true
-                this.alert=true
-                this.success=false
+                this.enable("upload")
+                this.disable("flash")
+                this.show_alert()
             });
           }},
           flash: function() {
             this.flashing = !this.flashing;
-            this.disable_flash_btn = true
+            this.disable("flash")
             let id = this.$store.state.active_device_id
             this.$ajax
-            .get('api/v1/ota/' + 'kk8a4zv')
+            .get('api/v1/ota/' + id)
             .then(res => {
-                this.status = "Image flashed successfully";
-                this.disable_flash_btn = false;
-                this.disable_upload_btn = false
-                this.flashing = !this.uploading;
-                this.alert=false
-                this.success=true
+                this.disable("flash");
+                this.enable("upload")
+                this.flashing = !this.flashing;
+                this.fetch_data("new")
             })
             .catch(error => {
                 this.status = "Could not be flashed: " + error.response.status + "-" + error.response.data
                 this.flashing = !this.flashing;
-                this.disable_flash_btn = false
-                this.disable_upload_btn = false
-                this.success=false
-                this.alert=true
+                this.enable("flash")
+                this.enable("upload")
+                this.show_alert()
             });
+          },
+          fetch_data: function(target) {
+            let id = this.$store.state.active_device_id
+            this.$ajax
+            .get("api/v1/ts/" + id + "/info")
+            .then(res => {
+                if (target == "old") {
+                    this.fw_version_old = res.data.FirmwareVersion;
+                } else if (target == "new") {
+                    this.fw_version_new = res.data.FirmwareVersion;
+                    this.status = "Updated successfully from " + this.fw_version_old + " --> " + this.fw_version_new;
+                    this.show_success()
+                }
+                return
+            })
+            .catch(error => {
+                this.status = "Device Information could not be fetched: " + error.response.status + "-" + error.response.data
+                this.show_alert()
+                return
+            });
+          },
+          enable: function(btn) {
+              if(btn == "flash") {
+                  this.disable_flash_btn = false
+              } else if (btn == "upload") {
+                  this.disable_upload_btn = false
+              }
+          },
+          disable: function(btn) {
+              if(btn == "flash") {
+                  this.disable_flash_btn = true
+              } else if (btn == "upload") {
+                  this.disable_upload_btn = true
+              }
+          },
+          show_alert: function() {
+              this.success = false
+              this.alert = true
+          },
+          show_success: function() {
+              this.alert = false
+              this.success = true
           }
+
       }
 }
 </script>
