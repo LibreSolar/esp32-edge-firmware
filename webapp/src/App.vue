@@ -52,7 +52,7 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-main class="accent" v-if="$store.state.loading">
+    <v-main class="accent" v-if="!$store.state.loading">
       <v-container fluid fill-height>
         <router-view/>
       </v-container>
@@ -73,7 +73,6 @@ export default {
     this.$ajax
       .get('api/v1/ts/')
       .then(res => {
-        console.log(res)
         if (res.data) {
           this.$store.state.devices = res.data
           this.$store.state.active_device = Object.keys(res.data)[0]
@@ -82,9 +81,6 @@ export default {
           this.$store.state.loading = false
         }
       })
-      .catch(error => {
-        console.log(error);
-      });
   },
   data () {
     return {
@@ -99,6 +95,7 @@ export default {
       ],
       right: null,
       active_device: "No Devices connected...",
+      dialog: false
     }
   },
   methods: {

@@ -32,7 +32,7 @@ module.exports = {
     plugins: [new CompressionPlugin({
       filename: '[name][ext].gz',
       algorithm: "gzip",
-      deleteOriginalAssets: true,
+      deleteOriginalAssets: process.env.NODE_ENV === 'production' ? true : false,
     })]
   }
 }
