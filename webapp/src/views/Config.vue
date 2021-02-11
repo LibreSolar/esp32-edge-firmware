@@ -28,6 +28,20 @@
             <v-icon left>mdi-cancel</v-icon> Cancel
           </v-btn>
           </v-container>
+          <v-card-text>
+            <v-alert
+            v-model="alert"
+            dense
+            text
+            type="warning"
+            transition="scale-transition"
+            ><v-row align="center">
+                <v-col class="grow">{{ status }}</v-col>
+                <v-col class="shrink">
+                  <v-btn color="warning" @click="fetch_data()">Reload</v-btn>
+                </v-col>
+              </v-row></v-alert>
+          </v-card-text>
         </v-card>
       </v-flex>
     </v-layout>
@@ -46,10 +60,7 @@
           <v-btn
             color="primary"
             text
-            @click="dialog = false"
-          >
-            Ok
-          </v-btn>
+            @click="dialog = false">Ok</v-btn>
         </v-card-actions>
       </v-card>
   </v-dialog>
@@ -63,14 +74,21 @@ export default {
       data_objects: null,
       base_data: null,
       diff: {},
-      dialog: false
+      dialog: false,
+      status: "",
+      alert: false
     }
   },
   created() {
-    let id = this.$store.state.active_device_id
+    this.fetch_data()
+  },
+  methods: {
+    fetch_data: function() {
+      let id = this.$store.state.active_device_id
     this.$ajax
       .get("api/v1/ts/" + id + "/conf")
       .then(res => {
+        this.alert = false
         this.data_objects = res.data
         // keep a copy so we can make a diff to reduce size,
         // writing to eeprom in the MCU takes long...
@@ -78,10 +96,10 @@ export default {
         this.base_data = JSON.parse(JSON.stringify(res.data))
       })
       .catch(error => {
-        console.log(error)
+        this.status = "Configuration Information could not be fetched: " + error.response.status + "-" + error.response.data
+        this.alert = true
       })
-  },
-  methods: {
+    },
     reset_values: function() {
       this.data_objects = this.base_data
     },
@@ -92,7 +110,6 @@ export default {
           this.diff[key] = this.data_objects[key]
         }
       }, this)
-      console.log(this.diff)
       this.$ajax
       .patch("api/v1/ts/" + id + "/conf", this.diff)
       .then(res => {
@@ -100,7 +117,6 @@ export default {
       })
       .catch(error => {
         this.dialog = true
-        //console.log(error)
       })
     }
   }
