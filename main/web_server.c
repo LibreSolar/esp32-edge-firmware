@@ -255,6 +255,10 @@ static esp_err_t ota_start_handler(httpd_req_t *req)
     httpd_resp_set_type(req, "text/plain");
 
     int ret = ts_serial_ota(flash_size->valueint, page_size->valueint);
+
+    /* Give it time to reboot, otherwise subsequent request could fail */
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
     if (ret != ESP_FAIL) {
         httpd_resp_sendstr(req, "OTA successful.");
     }
@@ -275,7 +279,7 @@ esp_err_t ota_upload_handler(httpd_req_t *req)
 
     unsigned int bytes_received = 0;
     unsigned int bytes_written = 0;
-    int buffer_size = 8*1024;
+    int buffer_size = 8 * 1024;
     char * buf = malloc(buffer_size);
     FILE *fd = fopen("/stm_ota/firmware.bin", "w");
     if (fd == NULL) {
