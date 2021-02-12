@@ -11,7 +11,7 @@
                   :key="name"
                 >
                   <v-text-field
-                    :label="name.split('_')[0]"
+                    :label="$store.state.info.conf[name].title.en"
                     v-model="data_objects[name]"
                     :suffix="name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : ''"
                     outlined

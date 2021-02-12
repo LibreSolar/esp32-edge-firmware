@@ -26,7 +26,7 @@
         target="_blank"
         text
       >
-        <span class="mr-2">Latest Release</span>
+        <span class="mr-2" v-if="$vuetify.breakpoint.mdAndUp">Latest Release</span>
         <v-icon>mdi-open-in-new</v-icon>
       </v-btn>
     </v-app-bar>
@@ -67,9 +67,12 @@
 </template>
 
 <script>
+import info from "../info.json"
+
 export default {
   name: 'App',
   created() {
+    this.$store.state.info = info
     this.$ajax
       .get('api/v1/ts/')
       .then(res => {
