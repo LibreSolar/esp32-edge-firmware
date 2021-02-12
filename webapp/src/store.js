@@ -11,14 +11,15 @@ export default new Vuex.Store({
     loading: true,
     devices: {},
     active_device: "",
-    active_device_id: ""
+    active_device_id: "",
+    info: {}
 
   },
   mutations: {
     init_chart_data(state, new_data) {
       const keys = Object.keys(new_data)
       keys.forEach(key => {
-        new_data[key] = Array(20).fill(0)
+        new_data[key] = Array(100)
         state.chart_data = new_data
       })
       state.chart_data_keys = keys
@@ -26,8 +27,8 @@ export default new Vuex.Store({
     },
     update_chart_data(state, new_data) {
       state.chart_data_keys.forEach(key => {
-        state.chart_data[key].push(new_data[key])
         state.chart_data[key].shift()
+        state.chart_data[key].push(new_data[key])
       });
       console.log(new_data);
       console.log(state.chart_data);
@@ -36,8 +37,8 @@ export default new Vuex.Store({
   actions: {
     init_chart_data( { commit }) {
       return axios.get("api/v1/ts/"+ this.state.active_device_id +"/output")
-        .then(data => {
-          commit("init_chart_data", data.data);
+        .then(res => {
+          commit("init_chart_data", res.data);
         })
         .catch(error => {
           console.log(error);
@@ -45,8 +46,8 @@ export default new Vuex.Store({
     },
     update_chart_data({ commit }) {
       return axios.get("api/v1/ts/"+ this.state.active_device_id +"/output")
-        .then(data => {
-          commit("update_chart_data", data.data);
+        .then(res => {
+          commit("update_chart_data", res.data);
         })
         .catch(error => {
           console.log(error);

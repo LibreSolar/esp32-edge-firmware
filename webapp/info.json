@@ -1,0 +1,1002 @@
+{
+    "info": {
+        "DeviceID": {
+            "title": {
+                "en": "Device ID",
+                "de": "Geräte-ID"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "Manufacturer": {
+            "title": {
+                "en": "Manufacturer",
+                "de": "Hersteller"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "DeviceType": {
+            "title": {
+                "en": "Device type",
+                "de": "Gerätetyp"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "HardwareVersion": {
+            "title": {
+                "en": "Hardware version",
+                "de": "Hardware-Version"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "FirmwareVersion": {
+            "title": {
+                "en": "Firmware version",
+                "de": "Firmware-Version"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "FirmwareCommit": {
+            "title": {
+                "en": "Firmware commit",
+                "de": "Firmware-Commit"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "Timestamp_s": {
+            "title": {
+                "en": "Timestamp",
+                "de": "Zeitstempel"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        },
+        "FlashSize_KiB": {
+            "title": {
+                "en": "Flash memory size",
+                "de": "Flash-Speicher Gesamtgröße"
+            },
+            "unit": "KiB",
+            "min": null,
+            "max": null
+        },
+        "FlashPageSize_KiB": {
+            "title": {
+                "en": "Flash memory page size",
+                "de": "Flash-Speicher Seitengröße"
+            },
+            "unit": "KiB",
+            "min": null,
+            "max": null
+        }
+    },
+    "conf": {
+        "BatNom_Ah": {
+            "title": {
+                "en": "Nominal battery capacity",
+                "de": "Nominelle Batteriekapazität"
+            },
+            "unit": "Ah",
+            "min": 1,
+            "max": 1000
+        },
+        "BatRecharge_V": {
+            "title": {
+                "en": "Battery recharge voltage",
+                "de": "Batterie-Nachladespannung"
+            },
+            "unit": "V",
+            "min": 10.0,
+            "max": 30.0
+        },
+        "BatAbsMin_V": {
+            "title": {
+                "en": "Battery minimum voltage",
+                "de": "Batterie-Minimalspannung"
+            },
+            "unit": "V",
+            "min": 8.0,
+            "max": 30.0
+        },
+        "BatChgMax_A": {
+            "title": {
+                "en": "Battery maximum voltage",
+                "de": "Batterie-Maximalspannung"
+            },
+            "unit": "A",
+            "min": 10.0,
+            "max": 30.0
+        },
+        "Topping_V": {
+            "title": {
+                "en": "Battery charge voltage",
+                "de": "Batterie-Ladespannung"
+            },
+            "unit": "V",
+            "min": 10.0,
+            "max": 30.0
+        },
+        "ToppingCutoff_A": {
+            "title": {
+                "en": "Topping cut-off current",
+                "de": "Abschaltstrom Vollladung"
+            },
+            "unit": "A",
+            "min": 0.0,
+            "max": 20.0
+        },
+        "ToppingCutoff_s": {
+            "title": {
+                "en": "Topping time limit",
+                "de": "Zeitbregrenzung Vollladung"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        },
+        "TrickleEn": {
+            "title": {
+                "en": "Enable trickle charging",
+                "de": "Erhaltungsladung einschalten"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "Trickle_V": {
+            "title": {
+                "en": "Trickle voltage",
+                "de": "Spannung Erhaltungsladung"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "TrickleRecharge_s": {
+            "title": {
+                "en": "Trickle recharge time",
+                "de": "Wiedereinschaltdauer Erhaltungsladung"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        },
+        "EqlEn": {
+            "title": {
+                "en": "Enable equalization charging",
+                "de": "Ausgleichsladung einschalten"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "Eql_V": {
+            "title": {
+                "en": "Equalization voltage",
+                "de": "Spannung Ausgleichsladung"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "Eql_A": {
+            "title": {
+                "en": "Equalization current limit",
+                "de": "Maximalstrom Ausgleichsladung"
+            },
+            "unit": "A",
+            "min": null,
+            "max": null
+        },
+        "EqlDuration_s": {
+            "title": {
+                "en": "Equalization duration",
+                "de": "Zeitbegrenzung Ausgleichsladung"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        },
+        "EqlInterval_d": {
+            "title": {
+                "en": "Max. equalization interval",
+                "de": "Max. Intervall zwischen Ausgleichsladungen"
+            },
+            "unit": "d",
+            "min": null,
+            "max": null
+        },
+        "EqlDeepDisTrigger": {
+            "title": {
+                "en": "Max. deep discharges for equalization",
+                "de": "Max. Tiefenentladungszyklen zwischen Ausgleichsladungen"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        },
+        "BatTempComp_mV-K": {
+            "title": {
+                "en": "Temperature compensation",
+                "de": "Temperaturausgleich"
+            },
+            "unit": "mV/K",
+            "min": null,
+            "max": null
+        },
+        "BatInt_Ohm": {
+            "title": {
+                "en": "Battery internal resistance",
+                "de": "Innenwiderstand Batterie"
+            },
+            "unit": "Ohm",
+            "min": null,
+            "max": null
+        },
+        "BatWire_Ohm": {
+            "title": {
+                "en": "Battery wire resistance",
+                "de": "Kabelwiderstand Batterie"
+            },
+            "unit": "Ohm",
+            "min": null,
+            "max": null
+        },
+        "BatChgMax_degC": {
+            "title": {
+                "en": "Maximum charge temperature",
+                "de": "Maximale Ladetemperatur"
+            },
+            "unit": "°C",
+            "min": null,
+            "max": null
+        },
+        "BatChgMin_degC": {
+            "title": {
+                "en": "Minimum charge temperature",
+                "de": "Minimale Ladetemperatur"
+            },
+            "unit": "°C",
+            "min": null,
+            "max": null
+        },
+        "BatDisMax_degC": {
+            "title": {
+                "en": "Maximum discharge Temperature",
+                "de": "Maximale Entladetemperatur"
+            },
+            "unit": "°C",
+            "min": null,
+            "max": null
+        },
+        "BatDisMin_degC": {
+            "title": {
+                "en": "Minimum Discharge Temperature",
+                "de": "Minimale Entladetemperatur"
+            },
+            "unit": "°C",
+            "min": null,
+            "max": null
+        },
+        "LoadEnDefault": {
+            "title": {
+                "en": "Enable load output automatically",
+                "de": "Last-Ausgang automatisch einschalten"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "LoadDisconnect_V": {
+            "title": {
+                "en": "Load Disconnect Voltage ",
+                "de": "Abschaltspannung Last-Ausgang"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "LoadReconnect_V": {
+            "title": {
+                "en": "Voltage Load Reconnect",
+                "de": "Wiederinschalt-Spannung Last-Ausgang"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "LoadOCRecovery_s": {
+            "title": {
+                "en": "Overcurrent Revovery Delay",
+                "de": "Überstrom-Wiedereinschalt-Verzögerung"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        },
+        "LoadUVRecovery_s": {
+            "title": {
+                "en": "Low Voltage Disconnect Revovery Delay",
+                "de": "Unterspannungs-Wiedereinschaltverzögerung"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        },
+        "UsbEnDefault": {
+            "title": {
+                "en": "Enable USB Power Output automatically",
+                "de": "USB Ladeport automatisch einschalten"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        },
+        "UsbUVRecovery_s": {
+            "title": {
+                "en": "USB LVD Revovery Delay",
+                "de": "USB LVD Wiederherstellungsverzögerung"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        },
+        "CanNodeId": {
+            "title": {
+                "en": "CAN Node Address",
+                "de": "CAN Node Adresse"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        }
+    },
+    "input": {
+        "LoadEn": {
+            "title": {
+                "en": "Enable Load",
+                "de": "Last einschalten"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "UsbEn": {
+            "title": {
+                "en": "Enable USB",
+                "de": "USB einschalten"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "DcdcEn": {
+            "title": {
+                "en": "Enable DCDC",
+                "de": "DCDC einschalten"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "PwmEn": {
+            "title": {
+                "en": "Enable PWM",
+                "de": "PWM einschalten"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "GridSink_V": {
+            "title": {
+                "en": "Sink Voltage Intercept",
+                "de": "Senkeneinschreitspannung"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "GridSrc_V": {
+            "title": {
+                "en": "Source Voltage Intercept",
+                "de": "Quelleneinschreitspannung"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        }
+    },
+    "output": {
+        "Bat_V": {
+            "title": {
+                "en": "Battery Voltage",
+                "de": "Batteriespannung"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "Bat_A": {
+            "title": {
+                "en": "Battery Current",
+                "de": "Batteriestrom"
+            },
+            "unit": "A",
+            "min": null,
+            "max": null
+        },
+        "Bat_W": {
+            "title": {
+                "en": "Battery Power",
+                "de": "Batterieleistung"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "Bat_degC": {
+            "title": {
+                "en": "Battery Temperature",
+                "de": "Batterietemperatur"
+            },
+            "unit": "°C",
+            "min": null,
+            "max": null
+        },
+        "BatTempExt": {
+            "title": {
+                "en": "Battery Ambient Temperature",
+                "de": "Batterie Umgebungstemperatur"
+            },
+            "unit": "°C",
+            "min": null,
+            "max": null
+        },
+        "SOC_pct": {
+            "title": {
+                "en": "State of Charge",
+                "de": "Ladezustand"
+            },
+            "unit": "%",
+            "min": null,
+            "max": null
+        },
+        "NumBatteries": {
+            "title": {
+                "en": "Number of Batteries",
+                "de": "Anzahl Batterien"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "Int_degC": {
+            "title": {
+                "en": "Internal Temperature",
+                "de": "Interne Temperatur"
+            },
+            "unit": "°C",
+            "min": null,
+            "max": null
+        },
+        "Mosfet_degC": {
+            "title": {
+                "en": "MOSFET Temperature",
+                "de": "MOSFET Temperatur"
+            },
+            "unit": "°C",
+            "min": null,
+            "max": null
+        },
+        "ChgTarget_V": {
+            "title": {
+                "en": "Charge Target Voltage",
+                "de": "Ziel-Ladespannung"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "ChgTarget_A": {
+            "title": {
+                "en": "Charge Target Current",
+                "de": "Ziel-Ladestrom"
+            },
+            "unit": "A",
+            "min": null,
+            "max": null
+        },
+        "ChgState": {
+            "title": {
+                "en": "Charger State",
+                "de": "Ladegerät-Zustand"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "DCDCState": {
+            "title": {
+                "en": "DC/DC State",
+                "de": "DC/DC-Zustand"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "Solar_V": {
+            "title": {
+                "en": "Solar Voltage",
+                "de": "Solar-Spannung"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "Solar_A": {
+            "title": {
+                "en": "Solar Current",
+                "de": "Solar-Strom"
+            },
+            "unit": "A",
+            "min": null,
+            "max": null
+        },
+        "Solar_W": {
+            "title": {
+                "en": "Solar Power",
+                "de": "Solar Leistung"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "Load_A": {
+            "title": {
+                "en": "Load Outupt Current",
+                "de": "Last-Ausgangs-Strom"
+            },
+            "unit": "A",
+            "min": null,
+            "max": null
+        },
+        "Load_W": {
+            "title": {
+                "en": "Load Output Power",
+                "de": "Last-Ausgangs-Leistung"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "LoadInfo": {
+            "title": {
+                "en": "Load Info",
+                "de": "Last-Info"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "UsbInfo": {
+            "title": {
+                "en": "USB Info",
+                "de": "USB-Info"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "Grid_V": {
+            "title": {
+                "en": "DC Grid Voltage",
+                "de": "Spannung DC-Netz"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "Grid_A": {
+            "title": {
+                "en": "DC Grid Current",
+                "de": "Strom DC-Netz"
+            },
+            "unit": "A",
+            "min": null,
+            "max": null
+        },
+        "Grid_W": {
+            "title": {
+                "en": "DC Grid Power",
+                "de": "Leistung DC-Grid"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "ErrorFlags": {
+            "title": {
+                "en": "Error Flags",
+                "de": "Fehlercode"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        }
+    },
+    "rec": {
+        "SolarInTotal_Wh": {
+            "title": {
+                "en": "Solar Energy (total)",
+                "de": "Gesamt-Solar-Energie (gesamt)"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "LoadOutTotal_Wh": {
+            "title": {
+                "en": "Load Output Energy (total)",
+                "de": "Energiedurchsatz Lastausgang (gesamt)"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "GridImportTotal_Wh": {
+            "title": {
+                "en": "Grid Imported Energy (total)",
+                "de": "Energie-Import DC-Netz (gesamt)"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "GridExportTotal_Wh": {
+            "title": {
+                "en": "Grid Exported Energy (total)",
+                "de": "Energie-Export DC-Netz (gesamt)"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "BatChgTotal_Wh": {
+            "title": {
+                "en": "Charged Energy (total)",
+                "de": "Energiedurchsatz Ladung (gesamt)"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "BatDisTotal_Wh": {
+            "title": {
+                "en": "Discharged Energy (total)",
+                "de": "Energiedurchsatz Entladung (gesamt)"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "FullChgCount": {
+            "title": {
+                "en": "Full Charge Counter",
+                "de": "Zähler Vollladezyklen"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "DeepDisCount": {
+            "title": {
+                "en": "Deep Discharge Counter",
+                "de": "Zähler Tiefentladungen"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "BatUsable_Ah": {
+            "title": {
+                "en": "Usable Battery Capacity",
+                "de": "Nutzbare Batterie-Kapazität"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "SolarMaxDay_W": {
+            "title": {
+                "en": "Peak Solar Power (today)",
+                "de": "Maximale Solarleistung (heute)"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "LoadMaxDay_W": {
+            "title": {
+                "en": "Peak Load Power (today)",
+                "de": "Maximale Lastleistung (heute)"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "SolarInDay_Wh": {
+            "title": {
+                "en": "Solar Energy (today)",
+                "de": "Solar-Ertrag (heute)"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "LoadOutDay_Wh": {
+            "title": {
+                "en": "Load Output Energy (today)",
+                "de": "Energie Last-Ausgang (heute)"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "BatChgDay_Wh": {
+            "title": {
+                "en": "Charged Energy (today)",
+                "de": "Geladene Energie (heute)"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "BatDisDay_Wh": {
+            "title": {
+                "en": "Discharged Energy (today)",
+                "de": "Entladene Energie (heute)"
+            },
+            "unit": "Wh",
+            "min": null,
+            "max": null
+        },
+        "Dis_Ah": {
+            "title": {
+                "en": "Discharged Battery Capacity",
+                "de": "Entladene Batterie-Kapazität"
+            },
+            "unit": "Ah",
+            "min": null,
+            "max": null
+        },
+        "SOH_pct": {
+            "title": {
+                "en": "Battery State of Health",
+                "de": "Batterie-Gesundheitszustand"
+            },
+            "unit": "%",
+            "min": null,
+            "max": null
+        },
+        "DayCount": {
+            "title": {
+                "en": "Day Counter",
+                "de": "Tagzähler"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "SolarMaxTotal_W": {
+            "title": {
+                "en": "Solar Peak Power (total)",
+                "de": "Maximalleistung Solar (gesamt)"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "LoadMaxTotal_W": {
+            "title": {
+                "en": "Load Peak Power (total)",
+                "de": "Maximalleistung Last-Ausgang (gesamt)"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "BatMaxTotal_V": {
+            "title": {
+                "en": "Battery Peak Voltage (all-time)",
+                "de": "Maximalspannung Batterie (gesamt)"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "SolarMaxTotal_V": {
+            "title": {
+                "en": "Solar All-Time Peak Voltage",
+                "de": "???"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "DcdcMaxTotal_A": {
+            "title": {
+                "en": "DCDC All-Time Peak Current",
+                "de": "???"
+            },
+            "unit": "A",
+            "min": null,
+            "max": null
+        },
+        "LoadMaxTotal_A": {
+            "title": {
+                "en": "Load All-Time Peak Current",
+                "de": "???"
+            },
+            "unit": "A",
+            "min": null,
+            "max": null
+        },
+        "BatMax_degC": {
+            "title": {
+                "en": "Battery All-Time Peak Temperature",
+                "de": "???"
+            },
+            "unit": "C",
+            "min": null,
+            "max": null
+        },
+        "IntMax_degC": {
+            "title": {
+                "en": "Peak internal temperature (all-time)",
+                "de": "Interne Maximaltemperatur (gesamt)"
+            },
+            "unit": "C",
+            "min": null,
+            "max": null
+        },
+        "MosfetMax_degC": {
+            "title": {
+                "en": "Peak MOSFET temperature (all-time)",
+                "de": "MOSFET Maximaltemperatur (gesamt)"
+            },
+            "unit": "°C",
+            "min": null,
+            "max": null
+        }
+    },
+    "cal": {
+        "DcdcMin_W": {
+            "title": {
+                "en": "DC/DC minimum output power w/o shutdown",
+                "de": "DC/DC Mindest-Leistung vor Abschaltung"
+            },
+            "unit": "W",
+            "min": null,
+            "max": null
+        },
+        "SolarAbsMax_V": {
+            "title": {
+                "en": "Absolute Maximum Solar Voltage",
+                "de": "Maximal erlaubte Solar-Spannung"
+            },
+            "unit": "V",
+            "min": null,
+            "max": null
+        },
+        "DcdcRestart_s": {
+            "title": {
+                "en": "DC/DC Restart Interval",
+                "de": "DC/DC Restart Intervall"
+            },
+            "unit": "s",
+            "min": null,
+            "max": null
+        }
+    },
+    "exec": {
+        "reset": {
+            "title": {
+                "en": "Reset the Device",
+                "de": "Gerät zurücksetzen"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "bootloader-stm": {
+            "title": {
+                "en": "Start the bootloader",
+                "de": "Bootloader starten"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "save-settings": {
+            "title": {
+                "en": "Save settings to EEPROM",
+                "de": "Einstellungen ins EEPROM schreiben"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "auth": {
+            "title": {
+                "en": "Thingset Authentication",
+                "de": "Thingset Anmeldung"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "Password": {
+            "title": {
+                "en": "Send Password",
+                "de": "Sende Passwort"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        }
+    },
+    "pub": {},
+    "serial": {
+        "Enable": {
+            "title": {
+                "en": "Enable/Disable serial publications",
+                "de": "Serielle Publikation (de)aktivieren"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "IDs": {
+            "title": {
+                "en": "???",
+                "de": "???"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        }
+    },
+    "can": {
+        "Enable": {
+            "title": {
+                "en": "Enable/Disable CAN publications",
+                "de": "CAN Publikation (de)aktivieren"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        },
+        "IDs": {
+            "title": {
+                "en": "???",
+                "de": "???"
+            },
+            "unit": null,
+            "min": null,
+            "max": null
+        }
+    }
+}

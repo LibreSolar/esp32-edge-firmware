@@ -8,9 +8,9 @@ const options = {
 export default {
   extends: Line,
   mixins: [reactiveProp],
-  props: ['chartData'],
+  props: ['chartData', 'options'],
   mounted () {
-    this.renderChart(this.chartData, options)
+    this.renderChart(this.chartData, this.options)
   }
 }
 </script>
