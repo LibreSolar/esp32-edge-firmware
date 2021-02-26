@@ -1,5 +1,5 @@
 <template>
-  <v-container  v-if="$vuetify.breakpoint.lgAndUp" fill-height>
+  <v-container  v-if="$vuetify.breakpoint.lgAndUp && !loading" fill-height>
     <v-layout text-center>
       <v-flex>
         <v-card >
@@ -8,8 +8,8 @@
             <v-row justify="center" dense>
                 <v-col cols=8>
                     <v-select
-                    v-model="selected_data"
-                    :items="$store.state.chart_data_keys"
+                    v-model="selectedData"
+                    :items="Array.from(availableData.keys())"
                     :menu-props="{ maxHeight: '400' }"
                     label="Select"
                     multiple
@@ -22,7 +22,7 @@
             <v-row justify="center" dense>
                 <v-spacer></v-spacer>
                 <v-col cols=8>
-                    <v-btn @click="clear_selection()">Clear Selection</v-btn></v-col>
+                    <v-btn @click="clearSelection()">Clear Selection</v-btn></v-col>
                 <v-spacer></v-spacer>
             </v-row>
 
@@ -36,13 +36,13 @@
       </v-flex>
     </v-layout>
   </v-container>
-  <v-container  v-else fluid fill-height pa-0 ma-0>
+  <v-container  v-else-if="$vuetify.breakpoint.mdAndDown && !loading" fluid fill-height pa-0 ma-0>
     <v-layout text-center align-center>
       <v-flex>
         <div>
           <v-select
-            v-model="selected_data"
-            :items="$store.state.chart_data_keys"
+            v-model="selectedData"
+            :items="$store.state.chartDataKeys"
             :menu-props="{ maxHeight: '400' }"
             label="Select"
             multiple
@@ -51,7 +51,7 @@
             hint="Pick data nodes for display"
             persistent-hint
             ></v-select>
-            <v-btn @click="clear_selection()">Clear Selection</v-btn>
+            <v-btn @click="clearSelection()">Clear Selection</v-btn>
           <line-chart :chart-data="storedata" :responsive=true :options="options"></line-chart>
         </div>
       </v-flex>
@@ -78,14 +78,16 @@ export default {
   },
   data () {
     return {
-      selected_data: [],
-      plot_height: 0,
+      selectedData: [],
+      availableData: null,
+      loading: true,
       storedata: null,
       labels: [],
       run: true,
       timer: null,
       intervall: 3,
-      num_data_points: 100,
+      numDataPoints: 100,
+      //options to pass to chart object
       options: {
         scales: {
             xAxes: [{
@@ -108,35 +110,35 @@ export default {
       }
     }
   },
-  computed: {
-  },
-  created() {
-    this.plot_height = 400;
-  },
   mounted() {
-    this.$store.dispatch('init_chart_data');
-    clearInterval(this.timer);
-    this.timer = setInterval(this.getData, this.intervall*1000);
-    this.makeLabels()
+    //wait for data
+    this.$store.dispatch('initChartData').then(() =>{
+      clearInterval(this.timer);
+      this.timer = setInterval(this.getData, this.intervall*1000);
+      this.makeLabels();
+      this.createSelection();
+    });
   },
   beforeDestroy() {
     clearInterval(this.timer);
   },
   methods: {
-    clear_selection() {
-      this.selected_data = []
+    clearSelection() {
+      this.selectedData = []
     },
     updateGraph() {
       let data = []
-      this.selected_data.forEach((key, index) => {
-        let buf = new Object()
-        let colorNames = Object.keys(chartColors)
-        buf["label"] = this.$store.state.info.output[key].title.en
+      this.selectedData.forEach((key, index) => {
+        //the key from thingset response
+        let originalKey = this.availableData.get(key);
+        let buf = new Object();
+        let colorNames = Object.keys(chartColors);
+        buf["label"] = key
         buf["fill"] = false
         buf["pointRadius"] = 2
         buf["lineTension"] = 0
         buf["borderColor"] = chartColors[colorNames[index % colorNames.length]]
-        buf["data"] = this.$store.state.chart_data[key]
+        buf["data"] = this.$store.state.chartData[originalKey]
         data.push(buf)
       })
       this.storedata = {
@@ -145,16 +147,30 @@ export default {
       }
     },
     makeLabels() {
-      this.labels = Array(this.num_data_points)
-      for(var i = -this.num_data_points; i != 1; i++) {
-          this.labels[this.num_data_points + i] = "" + (i / 20)
+      this.labels = Array(this.numDataPoints)
+      for(var i = -this.numDataPoints; i != 1; i++) {
+          this.labels[this.numDataPoints + i] = "" + (i / 20)
       }
     },
-    async getData () {
-      if (this.run) {
-        await this.$store.dispatch('update_chart_data');
+    //necessary to handle cases when info.json could not be loaded
+    createSelection() {
+      this.availableData = new Map()
+      let key = ""
+      this.$store.state.chartDataKeys.forEach((elem) => {
+        if(this.$store.state.info) {
+          key = this.$store.state.info.output[elem].title.en
+        } else {
+          key = elem
+        }
+          this.availableData.set(key, elem)
+        })
+        console.log(this.availableData)
+      this.loading = false
+    },
+    getData () {
+      this.$store.dispatch('updateChartData').then(() => {
         this.updateGraph();
-      }
+      });
     }
   }
 }

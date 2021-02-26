@@ -1,13 +1,13 @@
 <template>
- <v-container fill-height>
+ <v-container fill-height fluid>
     <v-layout text-center align-center>
       <v-flex>
-        <v-card class="mx-auto my-auto" max-width="2048">
+        <v-card class="mx-auto my-auto" max-width="1200">
           <v-card-title primary-title class="justify-center">Configuration</v-card-title>
           <v-card-text>
             <v-row justify="center" dense no-gutters>
                 <v-col
-                  v-for="(value, name) in data_objects"
+                  v-for="(value, name) in dataObjects"
                   :key="name"
                   cols=12
                   md="6"
@@ -15,9 +15,9 @@
                   lg="6"
                   class="px-1 ma-0">
                   <v-text-field
-                    :label="$store.state.info.conf[name].title.en"
-                    v-model="data_objects[name]"
-                    :suffix="name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : ''"
+                    :label="$store.state.info ? $store.state.info.conf[name].title.en : name"
+                    v-model="dataObjects[name]"
+                    :suffix="$store.state.info ? $store.state.info.conf[name].unit : (name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : '')"
                     outlined
                     :dense="$vuetify.breakpoint.smAndDown"
                     class="pa-0 ma-0"
@@ -26,10 +26,10 @@
             </v-row>
           </v-card-text>
           <v-container class="text-center pa-md-6">
-            <v-btn color="primary" @click="send_values">
+            <v-btn color="primary" @click="sendValues">
               <v-icon left>mdi-checkbox-marked-circle</v-icon> Apply
             </v-btn>
-            <v-btn @click="reset_values">
+            <v-btn @click="resetValues">
               <v-icon left>mdi-cancel</v-icon> Cancel
             </v-btn>
           </v-container>
@@ -43,7 +43,7 @@
             <v-row align="center">
               <v-col class="grow">{{ status }}</v-col>
                 <v-col class="shrink">
-                  <v-btn color="warning" @click="fetch_data()">Reload</v-btn>
+                  <v-btn color="warning" @click="fetchData()">Reload</v-btn>
                 </v-col>
               </v-row></v-alert>
           </v-card-text>
@@ -77,49 +77,49 @@
 export default {
   data() {
     return {
-      data_objects: null,
-      base_data: null,
+      dataObjects: null,
+      baseData: null,
       diff: {},
       dialog: false,
       status: "",
-      alert: false
+      alert: false,
     }
   },
   created() {
-    this.fetch_data()
+    this.fetchData()
   },
   methods: {
-    fetch_data: function() {
-      let id = this.$store.state.active_device_id
+    fetchData: function() {
+      let id = this.$store.state.activeDeviceId
     this.$ajax
       .get("api/v1/ts/" + id + "/conf")
       .then(res => {
         this.alert = false
-        this.data_objects = res.data
+        this.dataObjects = res.data
         // keep a copy so we can make a diff to reduce size,
         // writing to eeprom in the MCU takes long...
         // this only works with basic datatypes, not with Date() etc.
-        this.base_data = JSON.parse(JSON.stringify(res.data))
+        this.baseData = JSON.parse(JSON.stringify(res.data))
       })
       .catch(error => {
         this.status = "Configuration Information could not be fetched: " + error.response.status + "-" + error.response.data
         this.alert = true
       })
     },
-    reset_values: function() {
-      this.data_objects = this.base_data
+    resetValues: function() {
+      this.dataObjects = this.baseData
     },
-    send_values: function() {
-      let id =  this.$store.state.active_device_id
-      Object.keys(this.data_objects).forEach(function(key) {
-        if(this.base_data[key] != this.data_objects[key]){
-          this.diff[key] = this.data_objects[key]
+    sendValues: function() {
+      let id =  this.$store.state.activeDeviceId
+      Object.keys(this.dataObjects).forEach(key => {
+        if(this.baseData[key] != this.dataObjects[key]){
+          this.diff[key] = this.dataObjects[key]
         }
-      }, this)
+      })
       this.$ajax
       .patch("api/v1/ts/" + id + "/conf", this.diff)
       .then(res => {
-          this.base_data = this.data_objects
+          this.baseData = this.dataObjects
       })
       .catch(error => {
         this.dialog = true
