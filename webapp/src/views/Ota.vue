@@ -1,8 +1,8 @@
 <template>
-   <v-container fill-height>
-    <v-layout text-center align-center>
-      <v-flex>
-        <v-card>
+   <v-container fill-height fluid>
+    <v-layout text-center align-center >
+      <v-flex class="text-center">
+        <v-card max-width=600 class="mx-auto my-auto">
         <v-card-title class="justify-center">Over-the-Air-Upgrade</v-card-title>
         <v-card-text>
             <v-row justify="center" dense>
@@ -15,7 +15,7 @@
             <v-row justify="center" dense>
                 <v-col cols=10>
                     <div class="ma-auto">
-                        Current Version: {{ fw_version_old }}
+                        Current Version: {{ oldFwVersion }}
                     </div>
                 </v-col>
             </v-row>
@@ -35,7 +35,7 @@
                 <v-col cols=2>
                     <v-btn
                     :loading="uploading"
-                    :disabled="upload_disabled"
+                    :disabled="uploadDisabled"
                     @click="upload()">
                     Upload</v-btn>
                 </v-col>
@@ -43,7 +43,7 @@
                 <v-col cols=2>
                     <v-btn
                     :loading="flashing"
-                    :disabled="flash_disabled"
+                    :disabled="flashDisabled"
                     @click="flash()">
                     Flash</v-btn></v-col>
                 <v-spacer></v-spacer>
@@ -80,25 +80,25 @@ export default {
     return {
         uploading: false,
         flashing: false,
-        disable_flash_btn: true,
-        disable_upload_btn: false,
+        disableFlashBtn: true,
+        disableUploadBtn: false,
         file: null,
         status: null,
         alert: false,
         success: false,
-        fw_version_old: null,
-        fw_version_new: null
+        oldFwVersion: null,
+        NewFwVersion: null
     }
   },
   mounted() {
-      this.fetch_data("old")
+      this.fetchData("old")
   },
   computed: {
-      flash_disabled() {
-          return this.disable_flash_btn;
+      flashDisabled() {
+          return this.disableFlashBtn;
       },
-      upload_disabled() {
-          return this.disable_upload_btn;
+      uploadDisabled() {
+          return this.disableUploadBtn;
       }
   },
   methods: {
@@ -108,7 +108,7 @@ export default {
           var reader = new FileReader();
           if(!this.file) {
               this.status = "No file selected"
-              this.show_alert()
+              this.showAlert()
               this.uploading = !this.uploading;
               this.enable("upload")
               return;
@@ -122,75 +122,75 @@ export default {
                 this.enable("flash");
                 this.enable("upload")
                 this.uploading = !this.uploading;
-                this.show_success()
+                this.showSuccess()
             })
             .catch(error => {
                 this.status = "Could not upload image - Statuscode: " + error.response.status
                 this.uploading = !this.uploading;
                 this.enable("upload")
                 this.disable("flash")
-                this.show_alert()
+                this.showAlert()
             });
           }},
           flash: function() {
             this.flashing = !this.flashing;
             this.disable("flash")
-            let id = this.$store.state.active_device_id
+            let id = this.$store.state.activeDeviceId
             this.$ajax
             .get('api/v1/ota/' + id)
             .then(res => {
                 this.disable("flash");
                 this.enable("upload")
                 this.flashing = !this.flashing;
-                this.fetch_data("new")
+                this.fetchData("new")
             })
             .catch(error => {
                 this.status = "Could not be flashed: " + error.response.status + "-" + error.response.data
                 this.flashing = !this.flashing;
                 this.enable("flash")
                 this.enable("upload")
-                this.show_alert()
+                this.showAlert()
             });
           },
-          fetch_data: function(target) {
-            let id = this.$store.state.active_device_id
+          fetchData: function(target) {
+            let id = this.$store.state.activeDeviceId
             this.$ajax
             .get("api/v1/ts/" + id + "/info")
             .then(res => {
                 if (target == "old") {
-                    this.fw_version_old = res.data.FirmwareVersion;
+                    this.oldFwVersion = res.data.FirmwareVersion;
                 } else if (target == "new") {
-                    this.fw_version_new = res.data.FirmwareVersion;
-                    this.status = "Updated successfully from " + this.fw_version_old + " --> " + this.fw_version_new;
-                    this.show_success()
+                    this.NewFwVersion = res.data.FirmwareVersion;
+                    this.status = "Updated successfully from " + this.oldFwVersion + " --> " + this.NewFwVersion;
+                    this.showSuccess()
                 }
                 return
             })
             .catch(error => {
                 this.status = "Device Information could not be fetched: " + error.response.status + "-" + error.response.data
-                this.show_alert()
+                this.showAlert()
                 return
             });
           },
           enable: function(btn) {
               if(btn == "flash") {
-                  this.disable_flash_btn = false
+                  this.disableFlashBtn = false
               } else if (btn == "upload") {
-                  this.disable_upload_btn = false
+                  this.disableUploadBtn = false
               }
           },
           disable: function(btn) {
               if(btn == "flash") {
-                  this.disable_flash_btn = true
+                  this.disableFlashBtn = true
               } else if (btn == "upload") {
-                  this.disable_upload_btn = true
+                  this.disableUploadBtn = true
               }
           },
-          show_alert: function() {
+          showAlert: function() {
               this.success = false
               this.alert = true
           },
-          show_success: function() {
+          showSuccess: function() {
               this.alert = false
               this.success = true
           }

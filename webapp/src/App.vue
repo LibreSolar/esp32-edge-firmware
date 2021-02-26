@@ -11,11 +11,11 @@
       <v-menu offset-y>
         <template v-slot:activator=" {on, attrs}">
           <v-btn color="secondary" dark v-bind="attrs" v-on="on">
-            {{ active_device }}
+            {{ activeDevice }}
           </v-btn>
         </template>
         <v-list>
-          <v-list-item v-for="key in Object.keys($store.state.devices)" :key="key" @click="change_device(key)">
+          <v-list-item v-for="key in Object.keys($store.state.devices)" :key="key" @click="changeDevice(key)">
             <v-list-item-title v-text="key"></v-list-item-title>
           </v-list-item>
         </v-list>
@@ -73,9 +73,9 @@ export default {
       .then(res => {
         if (res.data) {
           this.$store.state.devices = res.data
-          this.$store.state.active_device = Object.keys(res.data)[0]
-          this.$store.state.active_device_id = Object.values(res.data)[0]
-          this.active_device = "Device: " + this.$store.state.active_device
+          this.$store.state.activeDevice = Object.keys(res.data)[0]
+          this.$store.state.activeDeviceId = Object.values(res.data)[0]
+          this.activeDevice = "Device: " + this.$store.state.activeDevice
           this.$store.state.loading = false
         }
       })
@@ -92,14 +92,14 @@ export default {
         { title: 'Firmware Upgrade', href: '/ota', icon: 'mdi-upload'}
       ],
       right: null,
-      active_device: "No Devices connected...",
+      activeDevice: "No Devices connected...",
       dialog: false
     }
   },
   methods: {
-    change_device: function(key) {
-      this.$store.state.active_device = key
-      this.$store.state.active_device_id = this.$store.state.devices[key]
+    changeDevice: function(key) {
+      this.$store.state.activeDevice = key
+      this.$store.state.activeDeviceId = this.$store.state.devices[key]
     }
   }
 };
