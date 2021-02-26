@@ -1,3 +1,6 @@
+# Copyright (c) The Libre Solar Project Contributors
+#
+# SPDX-License-Identifier: Apache-2.0
 
 # Most boards have 40 MHz XTAL frequency, but e.g. ESP32thing has 26 MHz. Auto supports all boards.
 CONFIG_ESP32_XTAL_FREQ_AUTO=y
