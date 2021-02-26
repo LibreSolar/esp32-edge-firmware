@@ -1,7 +1,7 @@
 <template>
-    <v-container>
-        <v-layout text-xs-center wrap>
-      <v-flex xs12 sm6 offset-sm3>
+   <v-container fill-height>
+    <v-layout text-center align-center>
+      <v-flex>
         <v-card>
         <v-card-title class="justify-center">Over-the-Air-Upgrade</v-card-title>
         <v-card-text>
