@@ -10,6 +10,8 @@ set(app_sources
 	"web_fs.c"
 	"web_server.c"
 	"provisioning.c"
+	"../lib/isotp/isotp.c"
+	"isotp_user.c"
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS ".")

@@ -40,12 +40,23 @@ The data can be accessed in the same way as described above.
 - Data access via HTTP JSON API
 - Publishing of monitoring data via WiFi to
     - Open Energy Monitor [Emoncms](https://emoncms.org/)
-    - MQTT sever (ToDo)
+    - MQTT server (ToDo)
 - Data logging on SD card (ToDo)
 
 ## Usage
 
-### Build the Webapp
+### Getting the firmware
+
+This firmware repository contains git submodules, so you need to clone (download) it by calling:
+
+```
+git clone --recursive https://github.com/LibreSolar/esp32-edge-firmware
+```
+
+Unfortunately, the green GitHub "Clone or download" button does not include submodules. If you cloned the repository already and want to pull the submodules, run `git submodule update --init --recursive`.
+
+
+### Building the webapp
 
 To be able to build the esp32-edge-firmware you need to build the webapp first.
 To do so, go into the webapp folder
@@ -59,7 +70,8 @@ and run
     npm install
     npm run build
 ```
-you are now able to build the firmware itself.
+
+You are now able to build the firmware itself.
 
 ### ESP-IDF toolchain
 
@@ -72,7 +84,7 @@ After installation run the following commands:
 
 ### PlatformIO
 
-You can use PlatformIO for easy bulding and flashing. Currently, ESP-IDF 4.0 support is still in beta phase, so it might not work out of the box. However, the setup in `platformio.ini` was adjusted to support the new ESP-IDF already.
+You can use PlatformIO for easy building and flashing. However, the PlatformIO packages for ESP-IDF are not updated as frequently as the official repositories.
 
 ### Configuration
 
