@@ -1,8 +1,8 @@
 <template>
-  <v-container  v-if="$vuetify.breakpoint.mdAndUp" fluid pa-2 ma-2>
-    <v-layout text-center wrap>
-      <v-flex xs12 sm10 md10 lg8 offset-lg2 offset-md1 offset-sm1>
-        <v-card class="mx-auto my-auto" max-width="2048">
+  <v-container  v-if="$vuetify.breakpoint.lgAndUp" fill-height>
+    <v-layout text-center>
+      <v-flex>
+        <v-card >
           <v-card-title primary-title class="justify-center">Live View</v-card-title>
           <v-card-text>
             <v-row justify="center" dense>
@@ -27,18 +27,18 @@
             </v-row>
 
             <v-row justify="center" class="flex-grow-0">
-                <v-col cols=10 >
-                  <line-chart :chart-data="storedata" :height="260" :responsive=false :options="options"></line-chart>
+                <v-col cols=12 >
+                  <line-chart :chart-data="storedata" :height="180" :responsive=false :options="options"></line-chart>
                 </v-col>
             </v-row>
-        </v-card-text>
+          </v-card-text>
         </v-card>
-        </v-flex>
+      </v-flex>
     </v-layout>
-        </v-container>
-        <v-container  v-else fluid pa-0 ma-0>
-           <v-layout text-center wrap>
-      <v-flex xs12 sm10 md10 lg8 offset-lg2 offset-md1 offset-sm1>
+  </v-container>
+  <v-container  v-else fluid fill-height pa-0 ma-0>
+    <v-layout text-center align-center>
+      <v-flex>
         <div>
           <v-select
             v-model="selected_data"
@@ -46,8 +46,8 @@
             :menu-props="{ maxHeight: '400' }"
             label="Select"
             multiple
-            chips
             outlined
+            dense
             hint="Pick data nodes for display"
             persistent-hint
             ></v-select>
@@ -79,6 +79,7 @@ export default {
   data () {
     return {
       selected_data: [],
+      plot_height: 0,
       storedata: null,
       labels: [],
       run: true,
@@ -109,7 +110,10 @@ export default {
   },
   computed: {
   },
-  mounted () {
+  created() {
+    this.plot_height = 400;
+  },
+  mounted() {
     this.$store.dispatch('init_chart_data');
     clearInterval(this.timer);
     this.timer = setInterval(this.getData, this.intervall*1000);

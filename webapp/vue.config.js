@@ -5,7 +5,7 @@ module.exports = {
   devServer: {
     proxy: {
       '/api/v1/ts': {
-        target: 'http://192.168.0.61',
+        target: 'http://',
         changeOrigin: true,
         ws: true
       }
@@ -32,7 +32,7 @@ module.exports = {
     plugins: [new CompressionPlugin({
       filename: '[name][ext].gz',
       algorithm: "gzip",
-      deleteOriginalAssets: false,
+      deleteOriginalAssets: true,
     })]
   }
 }

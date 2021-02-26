@@ -1,42 +1,47 @@
 <template>
-  <v-container>
-    <v-layout text-xs-center wrap>
-      <v-flex xs12 sm6 offset-sm3>
-        <v-card>
+ <v-container fill-height>
+    <v-layout text-center align-center>
+      <v-flex>
+        <v-card class="mx-auto my-auto" max-width="2048">
+          <v-card-title primary-title class="justify-center">Configuration</v-card-title>
           <v-card-text>
-            <v-container fluid grid-list-lg>
-              <v-layout row wrap>
-                <v-flex xs12
+            <v-row justify="center" dense no-gutters>
+                <v-col
                   v-for="(value, name) in data_objects"
                   :key="name"
-                >
+                  cols=12
+                  md="6"
+                  sm="8"
+                  lg="6"
+                  class="px-1 ma-0">
                   <v-text-field
                     :label="$store.state.info.conf[name].title.en"
                     v-model="data_objects[name]"
                     :suffix="name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : ''"
                     outlined
+                    :dense="$vuetify.breakpoint.smAndDown"
+                    class="pa-0 ma-0"
                   ></v-text-field>
-                </v-flex>
-              </v-layout>
-            </v-container>
+                </v-col>
+            </v-row>
           </v-card-text>
           <v-container class="text-center pa-md-6">
-          <v-btn color="primary" @click="send_values">
-            <v-icon left>mdi-checkbox-marked-circle</v-icon> Apply
-          </v-btn>
-          <v-btn @click="reset_values">
-            <v-icon left>mdi-cancel</v-icon> Cancel
-          </v-btn>
+            <v-btn color="primary" @click="send_values">
+              <v-icon left>mdi-checkbox-marked-circle</v-icon> Apply
+            </v-btn>
+            <v-btn @click="reset_values">
+              <v-icon left>mdi-cancel</v-icon> Cancel
+            </v-btn>
           </v-container>
           <v-card-text>
             <v-alert
-            v-model="alert"
-            dense
-            text
-            type="warning"
-            transition="scale-transition"
-            ><v-row align="center">
-                <v-col class="grow">{{ status }}</v-col>
+              v-model="alert"
+              dense
+              text
+              type="warning"
+              transition="scale-transition">
+            <v-row align="center">
+              <v-col class="grow">{{ status }}</v-col>
                 <v-col class="shrink">
                   <v-btn color="warning" @click="fetch_data()">Reload</v-btn>
                 </v-col>
@@ -45,14 +50,14 @@
         </v-card>
       </v-flex>
     </v-layout>
-    <v-dialog v-model="dialog" width="500">
+    <v-dialog v-model="dialog" width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card>
         <v-card-title class="headline red lighten-2">
           Something went wrong!
         </v-card-title>
         <v-divider></v-divider>
         <v-card-text>
-        This might happen if some of the values are not plausible, the MCU checks new values prior to saving. Please refresh the page to update the values and see what has been written!
+          This might happen if some of the values are not plausible, the MCU checks new values prior to saving. Please refresh the page to update the values and see what has been written!
         </v-card-text>
         <v-divider></v-divider>
         <v-card-actions>
@@ -61,9 +66,10 @@
             color="primary"
             text
             @click="dialog = false">Ok</v-btn>
+          <v-spacer></v-spacer>
         </v-card-actions>
       </v-card>
-  </v-dialog>
+    </v-dialog>
   </v-container>
 </template>
 
