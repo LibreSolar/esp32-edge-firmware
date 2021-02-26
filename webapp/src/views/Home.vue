@@ -1,7 +1,7 @@
 <template>
-  <v-container>
-    <v-layout text-xs-center wrap>
-      <v-flex xs12 sm6 offset-sm3>
+  <v-container fill-height>
+    <v-layout text-center align-center>
+      <v-flex>
         <v-card>
           <v-img :src="require('../assets/logo.png')" contain height="200"></v-img>
           <v-card-title primary-title>

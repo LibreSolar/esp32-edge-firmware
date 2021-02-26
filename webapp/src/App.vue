@@ -31,11 +31,12 @@
       </v-btn>
     </v-app-bar>
 
-    <v-navigation-drawer v-model="drawer" app clipped>
-      <v-list
-        dense
-        nav
-      >
+    <v-main class="accent" v-if="!$store.state.loading">
+        <router-view/>
+    </v-main>
+
+    <v-navigation-drawer v-model="drawer" app clipped :expand-on-hover="$vuetify.breakpoint.lgAndUp">
+      <v-list dense nav>
         <v-list-item
           v-for="item in items"
           :key="item.title"
@@ -51,12 +52,6 @@
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
-
-    <v-main class="accent" v-if="!$store.state.loading">
-      <v-container fluid fill-height>
-        <router-view/>
-      </v-container>
-    </v-main>
 
     <v-footer color="primary">
       <v-spacer></v-spacer>
@@ -87,7 +82,7 @@ export default {
   },
   data () {
     return {
-      drawer: true,
+      drawer: null,
       items: [
         { title: 'Device Info', href: '/', icon: 'mdi-home' },
         { title: 'Live View', href: '/live', icon: 'mdi-chart-line' },
