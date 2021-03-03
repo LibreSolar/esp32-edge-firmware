@@ -164,7 +164,6 @@ export default {
         }
           this.availableData.set(key, elem)
         })
-        console.log(this.availableData)
       this.loading = false
     },
     getData () {
