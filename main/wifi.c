@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef UNIT_TEST
+
 #include "wifi.h"
 
 #include <string.h>
@@ -166,3 +168,5 @@ static void stop(void)
     ESP_ERROR_CHECK(esp_wifi_stop());
     ESP_ERROR_CHECK(esp_wifi_deinit());
 }
+
+#endif //UNIT_TEST

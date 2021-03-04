@@ -4,11 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "ts_client.h"
-#include "ts_serial.h"
 
+#include "ts_client.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef UNIT_TEST
+
+#include "ts_serial.h"
+
+
 
 #include "esp_http_server.h"
 #include "esp_err.h"
@@ -22,7 +27,7 @@ static TSDevice *devices[10];
 void ts_scan_devices()
 {
     //scan serial connection
-    devices[0] = (TSDevice *) heap_caps_malloc(sizeof(TSDevice), MALLOC_CAP_8BIT);
+    devices[0] = (TSDevice *) malloc(sizeof(TSDevice));
     if (ts_serial_scan_device_info(devices[0]) != 0) {
         free(devices[0]);
         devices[0] = NULL;
@@ -65,6 +70,7 @@ TSDevice *ts_get_device(char *device_id)
     return NULL;
 }
 
+#endif
 // wrapper for strlen() to check for NULL
 static int strlen_null(char *r)
 {
@@ -86,16 +92,24 @@ char *exec_or_create(char *node)
 
 void ts_parse_uri(const char *uri, TSUriElems *params)
 {
+    params->ts_list_subnodes = -1;
+    params->ts_device_id = NULL;
+    params->ts_target_node = NULL;
+
     if (uri == NULL || uri[0] == '\0') {
+        #ifndef UNIT_TEST
         ESP_LOGE(TAG, "Got invalid uri");
+        #endif
         return;
     }
-    params->ts_list_subnodes = uri[strlen(uri)] == '/' ? 0 : 1;
+    params->ts_list_subnodes = uri[strlen(uri)-1] == '/' ? 0 : 1;
 
     // copy uri so we can safely modify
-    char *temp_uri = (char *) heap_caps_malloc((strlen(uri)+1), MALLOC_CAP_8BIT);
+    char *temp_uri = (char *) malloc(strlen(uri)+1);
     if (temp_uri == NULL) {
+        #ifndef UNIT_TEST
         ESP_LOGE(TAG, "Unable to allocate memory for temp_uri");
+        #endif
         return;
     }
     strcpy(temp_uri, uri);
@@ -109,16 +123,23 @@ void ts_parse_uri(const char *uri, TSUriElems *params)
     params->ts_device_id = temp_uri;
     // this points either to '\0' aka NULL or the rest of the string
     params->ts_target_node = temp_uri + i + 1;
+    #ifndef UNIT_TEST
+    ESP_LOGD(TAG, "Got URI %s", uri);
     ESP_LOGD(TAG, "Device_id: %s", params->ts_device_id);
     ESP_LOGD(TAG, "Target Node: %s", params->ts_target_node);
-    ESP_LOGD(TAG, "List the sub nodes: %s", params->ts_list_subnodes == 1 ? "yes" : "no");
+    ESP_LOGD(TAG, "List the sub nodes: %s", params->ts_list_subnodes == 0 ? "yes" : "no");
+    #endif
 }
+
 
 char *ts_build_query(uint8_t ts_method, TSUriElems *params)
 {
+    if (params == NULL) {
+        return NULL;
+    }
     // calculate size to allocate buffer
     int nbytes = 3;  // method + termination + zero termination
-    if (*(params->ts_target_node) == '\0' && params->ts_list_subnodes == 1) {
+    if (strlen_null(params->ts_target_node) == 0 && params->ts_list_subnodes == 0) {
         nbytes++;    // '/' at the end of query
     }
     nbytes += strlen_null(params->ts_target_node);
@@ -126,10 +147,12 @@ char *ts_build_query(uint8_t ts_method, TSUriElems *params)
         // additional whitespace between uri and array/json
         nbytes += strlen_null(params->ts_payload) +1;
     }
-    char *ts_query = (char *) heap_caps_malloc(nbytes, MALLOC_CAP_8BIT);
+    char *ts_query = (char *) malloc(nbytes);
 
     if (ts_query == NULL) {
+        #ifndef UNIT_TEST
         ESP_LOGE(TAG, "Unable to allocate memory for ts_query");
+        #endif
         return NULL;
     }
     int pos = 0;
@@ -152,7 +175,7 @@ char *ts_build_query(uint8_t ts_method, TSUriElems *params)
     }
     pos++;
     // corner case for getting device categories
-    if (*(params->ts_target_node) == '\0' && params->ts_list_subnodes == 1) {
+    if (strlen(params->ts_target_node) == 0 && params->ts_list_subnodes == 0) {
         ts_query[pos] = '/';
         pos++;
     } else {
@@ -169,10 +192,13 @@ char *ts_build_query(uint8_t ts_method, TSUriElems *params)
     ts_query[pos] = '\n';
     pos++;
     ts_query[pos] = '\0';
+    #ifndef UNIT_TEST
     ESP_LOGD(TAG, "Build query String: %s !", ts_query);
+    #endif
     return ts_query;
 }
 
+#ifndef UNIT_TEST
 TSResponse *ts_execute(const char *uri, char *content, int http_method)
 {
     uint8_t ts_method;
@@ -195,6 +221,7 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
     }
     TSUriElems params;
     params.ts_payload = content;
+    params.ts_list_subnodes = -1;
     ts_parse_uri(uri, &params);
     TSDevice *device = ts_get_device(params.ts_device_id);
     if (device == NULL) {
@@ -204,7 +231,7 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
     }
     char *ts_query_string = ts_build_query(ts_method, &params);
 
-    TSResponse *res = (TSResponse *) heap_caps_malloc(sizeof(TSResponse), MALLOC_CAP_8BIT);
+    TSResponse *res = (TSResponse *) malloc(sizeof(TSResponse));
     if (res == NULL) {
         ESP_LOGE(TAG, "Unable to allocate memory for ts response");
         heap_caps_free(ts_query_string);
@@ -251,3 +278,5 @@ int ts_resp_status(char *resp)
         return -1;
     }
 }
+
+#endif  //UNIT_TEST

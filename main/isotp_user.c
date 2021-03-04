@@ -4,9 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef UNIT_TEST
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 #include "esp_system.h"
 #include "esp_err.h"
@@ -51,3 +54,4 @@ void isotp_user_debug(const char* message, ...)
 	printf(message, argp);
 	va_end(argp);
 }
+#endif //UNIT_TEST

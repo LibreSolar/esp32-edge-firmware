@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef UNIT_TEST
+
 #include "ts_serial.h"
 
 #include <stdio.h>
@@ -352,4 +354,5 @@ out:
     return ret;
 }
 
-#endif
+#endif  // THINGSET_SERIAL
+#endif //UINIT_TEST

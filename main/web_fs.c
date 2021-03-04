@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef UNIT_TEST
+
 #include <stdio.h>
 #include <string.h>
 
@@ -70,3 +72,5 @@ esp_err_t init_fs(void)
 
     return ESP_OK;
 }
+
+#endif // UNIT_TEST

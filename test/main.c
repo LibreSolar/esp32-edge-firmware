@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tests.h"
+#include "./tests.h"
+#include <stdio.h>
 
 #ifdef __WIN32__
 
@@ -16,12 +17,12 @@ void tearDown (void) {}
 
 #endif
 
-int app_main()
+int main()
 {
-    void ts_client_tests();
+    ts_client_tests();
 
 #ifdef CUSTOM_TESTS
     custom_tests();
 #endif
-    return 1;
+    return 0;
 }
