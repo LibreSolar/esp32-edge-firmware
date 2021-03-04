@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#ifndef UNIT_TEST
 
 #include <string.h>
 #include <fcntl.h>
@@ -407,3 +408,5 @@ esp_err_t start_web_server(const char *base_path)
 
     return ESP_OK;
 }
+
+#endif // UNIT_TEST

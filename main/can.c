@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef UNIT_TEST
+
 #include "can.h"
 
 #include <stdio.h>
@@ -314,3 +316,4 @@ char *get_bms_json_data()
 }
 
 #endif
+#endif // UNIT_TEST

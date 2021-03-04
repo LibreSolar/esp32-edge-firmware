@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef UNIT_TEST
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -172,3 +174,4 @@ void emoncms_post_task(void *arg)
 }
 
 #endif // CONFIG_EMONCMS
+#endif // UNIT_TEST

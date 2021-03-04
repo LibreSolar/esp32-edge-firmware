@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef UNIT_TEST
+
 #include "stm32bl.h"
 
 #include "freertos/FreeRTOS.h"
@@ -261,3 +263,5 @@ int stm32bl_get_id()
 
     return ESP_FAIL;
 }
+
+#endif //UNIT_TEST
