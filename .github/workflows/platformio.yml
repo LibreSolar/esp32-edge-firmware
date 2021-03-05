@@ -23,9 +23,9 @@ jobs:
     - name: Run PlatformIO build tests
       run: |
         platformio run -e esp32-edge
-#    - name: Run PlatformIO unit-tests
-#      run: |
-#        platformio test -e unit_test
+    - name: Run PlatformIO unit-tests
+      run: |
+        platformio test -e unit_test
     - name: Run PlatformIO code checks
       run: |
         platformio check -e esp32-edge --skip-packages --fail-on-defect high
