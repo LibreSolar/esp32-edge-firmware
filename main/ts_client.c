@@ -8,21 +8,19 @@
 #include "ts_client.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "esp_err.h"
 
 #ifndef UNIT_TEST
 
 #include "ts_serial.h"
-
-
-
 #include "esp_http_server.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "cJSON.h"
 
 static const char *TAG = "ts_client";
-static TSDevice *devices[10];
 
+static TSDevice *devices[10];
 
 void ts_scan_devices()
 {
@@ -97,9 +95,7 @@ void ts_parse_uri(const char *uri, TSUriElems *params)
     params->ts_target_node = NULL;
 
     if (uri == NULL || uri[0] == '\0') {
-        #ifndef UNIT_TEST
         ESP_LOGE(TAG, "Got invalid uri");
-        #endif
         return;
     }
     params->ts_list_subnodes = uri[strlen(uri)-1] == '/' ? 0 : 1;
@@ -107,9 +103,7 @@ void ts_parse_uri(const char *uri, TSUriElems *params)
     // copy uri so we can safely modify
     char *temp_uri = (char *) malloc(strlen(uri)+1);
     if (temp_uri == NULL) {
-        #ifndef UNIT_TEST
         ESP_LOGE(TAG, "Unable to allocate memory for temp_uri");
-        #endif
         return;
     }
     strcpy(temp_uri, uri);
@@ -123,12 +117,10 @@ void ts_parse_uri(const char *uri, TSUriElems *params)
     params->ts_device_id = temp_uri;
     // this points either to '\0' aka NULL or the rest of the string
     params->ts_target_node = temp_uri + i + 1;
-    #ifndef UNIT_TEST
     ESP_LOGD(TAG, "Got URI %s", uri);
     ESP_LOGD(TAG, "Device_id: %s", params->ts_device_id);
     ESP_LOGD(TAG, "Target Node: %s", params->ts_target_node);
     ESP_LOGD(TAG, "List the sub nodes: %s", params->ts_list_subnodes == 0 ? "yes" : "no");
-    #endif
 }
 
 
@@ -150,9 +142,7 @@ char *ts_build_query(uint8_t ts_method, TSUriElems *params)
     char *ts_query = (char *) malloc(nbytes);
 
     if (ts_query == NULL) {
-        #ifndef UNIT_TEST
         ESP_LOGE(TAG, "Unable to allocate memory for ts_query");
-        #endif
         return NULL;
     }
     int pos = 0;
@@ -192,13 +182,12 @@ char *ts_build_query(uint8_t ts_method, TSUriElems *params)
     ts_query[pos] = '\n';
     pos++;
     ts_query[pos] = '\0';
-    #ifndef UNIT_TEST
     ESP_LOGD(TAG, "Build query String: %s !", ts_query);
-    #endif
     return ts_query;
 }
 
 #ifndef UNIT_TEST
+
 TSResponse *ts_execute(const char *uri, char *content, int http_method)
 {
     uint8_t ts_method;
