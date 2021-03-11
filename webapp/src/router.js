@@ -5,6 +5,8 @@ import Live from './views/Live.vue'
 import Config from './views/Config.vue'
 import IO from './views/IO.vue'
 import Ota from './views/Ota.vue'
+import DataLog from './views/DataLog.vue'
+
 
 Vue.use(Router)
 
@@ -31,6 +33,11 @@ export default new Router({
       path: '/io',
       name: 'io',
       component: IO
+    },
+    {
+      path: '/data-log',
+      name: 'data-log',
+      component: DataLog
     },
     {
       path: '/ota',

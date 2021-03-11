@@ -12,7 +12,7 @@
                   cols=12
                   md="6"
                   sm="8"
-                  lg="6"
+                  lg="4"
                   class="px-1 ma-0">
                   <v-text-field
                     :label="$store.state.info ? $store.state.info.conf[name].title.en : name"
