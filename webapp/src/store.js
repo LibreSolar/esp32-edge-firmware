@@ -13,7 +13,8 @@ export default new Vuex.Store({
     devices: {},
     activeDevice: "No Devices connected..",
     activeDeviceId: "",
-    info: info
+    info: info,
+    isAuthenticated: false
   },
   mutations: {
     changeDevice(state, key) {
@@ -39,9 +40,24 @@ export default new Vuex.Store({
         state.chartData[key].shift()
         state.chartData[key].push(newData[key])
       });
+    },
+    saveAuthStatus(state, status) {
+      state.isAuthenticated = status;
     }
   },
   actions: {
+    authenticate( { commit }, password){
+      return axios.post("api/v1/ts/" + this.state.activeDeviceId + "/auth",
+      '"' + password + '"',
+      {headers: {"Content-Type": "text/plain"}})
+      .then(res => {
+        commit('saveAuthStatus', true);
+      })
+      .catch(error => {
+        commit('saveAuthStatus', false);
+        throw error;
+      })
+    },
     getDevices( { commit }) {
       return  axios.get('api/v1/ts/')
         .then(res => {
