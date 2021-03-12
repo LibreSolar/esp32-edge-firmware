@@ -79,7 +79,7 @@ export default {
         { title: 'Device Info', href: '/', icon: 'mdi-home' },
         { title: 'Live View', href: '/live', icon: 'mdi-chart-line' },
         { title: 'Configuration', href: '/config', icon: 'mdi-tune' },
-        { title: 'Inout/Output', href: '/io', icon: 'mdi-swap-horizontal' },
+        { title: 'Input/Output', href: '/io', icon: 'mdi-swap-horizontal' },
         { title: 'Data Log', href: '/data-log', icon: 'mdi-chart-bar' },
         { title: 'Firmware Upgrade', href: '/ota', icon: 'mdi-upload'}
       ],
