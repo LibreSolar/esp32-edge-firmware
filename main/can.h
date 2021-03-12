@@ -24,6 +24,11 @@ typedef struct {
 extern bool update_bms_received;
 extern bool update_mppt_received;
 
+typedef struct {
+    uint8_t * data;
+    int len;
+} RecvMsg;
+
 /**
  * Initiate the CAN interface.
  */

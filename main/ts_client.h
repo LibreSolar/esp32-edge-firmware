@@ -55,28 +55,6 @@ extern "C" {
 #define TS_STATUS_RESPONSE_TOO_LARGE    0xE1
 
 /**
-* Struct to hold device information
-* when a new device is connected, the function pointer
-* should be set accordingly to either the serial or CAN send function
-*/
-typedef struct {
-    uint8_t CAN_Address;
-    char *ts_device_id;
-    char *ts_name;
-    //function pointer to send requests to device, abstracting underlying connection
-    char *(*send)(char * req, uint8_t CAN_Address);
-} TSDevice;
-
-/**
-* Struct to hold ts response values for the http handlers
-*/
-typedef struct {
-    uint8_t ts_status_code;
-    char *data;
-    char *block;
-} TSResponse;
-
-/**
  * Struct to hold all information passed by the HTTP request
  */
 typedef struct {
@@ -87,6 +65,32 @@ typedef struct {
 } TSUriElems;
 
 /**
+* Struct to hold ts response values for the http handlers
+*/
+typedef struct {
+    uint8_t ts_status_code;
+    char *data;
+    char *block;
+    uint32_t block_len;
+} TSResponse;
+
+/**
+* Struct to hold device information
+* when a new device is connected, the function pointer
+* should be set accordingly to either the serial or CAN send function
+*/
+typedef struct {
+    uint8_t CAN_Address;
+    char *ts_device_id;
+    char *ts_name;
+    //function pointer to send requests to device, abstracting underlying connection
+    char *(*send)(char *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len);
+    char *(*build_query)(uint8_t ts_method, TSUriElems *params, uint32_t* query_size);
+    char *(*ts_resp_data)(TSResponse *res);
+    int (*ts_resp_status)(char *resp);
+} TSDevice;
+
+/**
  * Get Handler for basic get requests
  *
  * \returns a pointer to a response object containing status code and data string
@@ -94,9 +98,9 @@ typedef struct {
 
 TSResponse *ts_execute(const char *uri, char *content, int http_method);
 
-char *ts_resp_data(char *resp);
+char *ts_serial_resp_data(TSResponse *res);
 
-int ts_resp_status(char *resp);
+int ts_serial_resp_status(char *resp);
 
 /**
  * Initializes the internal device list and scans
@@ -121,7 +125,8 @@ char *ts_get_device_list();
 int ts_req_hdr_from_http(char *buf, size_t buf_size, int method, const char *uri);
 
 void ts_parse_uri(const char *uri, TSUriElems *params);
-char *ts_build_query(uint8_t ts_method, TSUriElems *params);
+char *ts_build_query_serial(uint8_t ts_method, TSUriElems *params, uint32_t *query_size);
+int strlen_null(char *r);
 
 #ifdef __cplusplus
 }
