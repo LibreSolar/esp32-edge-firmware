@@ -11,7 +11,7 @@ import DataLog from './views/DataLog.vue'
 Vue.use(Router)
 
 export default new Router({
-  mode: 'history',
+  mode: 'abstract',
   base: process.env.BASE_URL,
   routes: [
     {
