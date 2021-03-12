@@ -210,9 +210,9 @@ void ts_serial_response_clear()
     xSemaphoreGive(resp_buf_lock);
 }
 
-// CAN_Address is not needed here, but we need the same signature
+// CAN_Address and request length is not needed here, but we need the same signature
 // as CAN send
-char *ts_serial_send(char *req, uint8_t CAN_Address)
+char *ts_serial_send(char *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
 {
     if (req == NULL) {
         ESP_LOGE(TAG, "Got invalid parameter");
@@ -246,7 +246,7 @@ int ts_serial_scan_device_info(TSDevice *device)
     }
 
     char *resp = ts_serial_response(500);
-    int status = ts_resp_status(resp != NULL ? resp : "");
+    int status = ts_serial_resp_status(resp != NULL ? resp : "");
     if (status != TS_STATUS_CONTENT) {
         ESP_LOGE(TAG, "Could not retrieve device information: Code %d", status);
         ts_serial_response_clear();
@@ -261,7 +261,7 @@ int ts_serial_scan_device_info(TSDevice *device)
     }
 
     resp = ts_serial_response(500);
-    status = ts_resp_status(resp != NULL ? resp : "");
+    status = ts_serial_resp_status(resp != NULL ? resp : "");
     if (status != TS_STATUS_CONTENT) {
         ESP_LOGE(TAG, "Could not retrieve device information: Code %d", status);
         ts_serial_response_clear();
@@ -269,7 +269,10 @@ int ts_serial_scan_device_info(TSDevice *device)
     }
 
     // shift pointer to data
-    resp = ts_resp_data(resp);
+    char *pos = strstr(resp, ". ");
+    if (pos != NULL) {
+        resp =  pos + 2;
+    }
 
     cJSON *json_data = cJSON_Parse(resp);
     ts_serial_response_clear();
@@ -281,6 +284,9 @@ int ts_serial_scan_device_info(TSDevice *device)
     strcpy(device->ts_device_id , cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceID")));
     // link send function
     device->send = ts_serial_send;
+    device->build_query = ts_build_query_serial;
+    device->ts_resp_data = ts_serial_resp_data;
+    device->ts_resp_status = ts_serial_resp_status;
     device->CAN_Address = UINT8_MAX;
     ESP_LOGI(TAG, "Found device with ID: %s!", device->ts_device_id);
     cJSON_Delete(json_data);

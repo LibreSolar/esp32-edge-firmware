@@ -14,7 +14,6 @@
 
 #include "ts_serial.h"
 #include "esp_http_server.h"
-#include "esp_err.h"
 #include "esp_log.h"
 #include "cJSON.h"
 #include "data_nodes.h"
@@ -84,7 +83,7 @@ TSDevice *ts_get_device(char *device_id)
 
 #endif
 // wrapper for strlen() to check for NULL
-static int strlen_null(char *r)
+int strlen_null(char *r)
 {
     if (r != NULL) {
         return(strlen(r));
@@ -138,7 +137,7 @@ void ts_parse_uri(const char *uri, TSUriElems *params)
 }
 
 
-char *ts_build_query(uint8_t ts_method, TSUriElems *params)
+char *ts_build_query_serial(uint8_t ts_method, TSUriElems *params, uint32_t *query_size)
 {
     if (params == NULL) {
         return NULL;
@@ -154,6 +153,7 @@ char *ts_build_query(uint8_t ts_method, TSUriElems *params)
         nbytes += strlen_null(params->ts_payload) +1;
     }
     char *ts_query = (char *) malloc(nbytes);
+    //*query_size = nbytes;
 
     if (ts_query == NULL) {
         ESP_LOGE(TAG, "Unable to allocate memory for ts_query");
@@ -232,7 +232,8 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
         heap_caps_free(params.ts_device_id);
         return NULL;
     }
-    char *ts_query_string = ts_build_query(ts_method, &params);
+    uint32_t query_size;
+    char *ts_query_string = device->build_query(ts_method, &params, &query_size);
 
     TSResponse *res = (TSResponse *) malloc(sizeof(TSResponse));
     if (res == NULL) {
@@ -241,8 +242,10 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
         heap_caps_free(params.ts_device_id);
         return NULL;
     }
-
-    res->block = device->send(ts_query_string, device->CAN_Address);
+    // send is already a pointer to the correct function
+    uint32_t block_len = 0;
+    res->block = device->send(ts_query_string, query_size, device->CAN_Address, &block_len);
+    res->block_len = block_len;
     if (res->block == NULL) {
         ESP_LOGD(TAG, "No Response, freeing query string and device id");
         heap_caps_free(ts_query_string);
@@ -250,8 +253,9 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
         heap_caps_free(res);
         return NULL;
     }
-    res->ts_status_code = ts_resp_status(res->block);
-    res->data = ts_resp_data(res->block);
+    //call status code first, data will be overwritten when device is using CAN
+    res->ts_status_code = device->ts_resp_status(res->block);
+    res->data = device->ts_resp_data(res);
 
     heap_caps_free(ts_query_string);
     heap_caps_free(params.ts_device_id);
@@ -259,10 +263,10 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
     return res;
 }
 
-char *ts_resp_data(char *resp)
+char *ts_serial_resp_data(TSResponse *res)
 {
-    if (resp[0] == ':') {
-        char *pos = strstr(resp, ". ");
+    if (res->block[0] == ':') {
+        char *pos = strstr(res->block, ". ");
         if (pos != NULL) {
             return pos + 2;
         }
@@ -270,16 +274,11 @@ char *ts_resp_data(char *resp)
     return NULL;
 }
 
-int ts_resp_status(char *resp)
+int ts_serial_resp_status(char *resp)
 {
-    unsigned int status_code = 0;
-    int ret = sscanf(resp, ":%X ", &status_code);
-    if (ret > 0) {
-        return status_code;
-    }
-    else {
-        return -1;
-    }
+    unsigned int status_code = -1;
+    sscanf(resp, ":%X ", &status_code);
+    return status_code;
 }
 
 #endif  //UNIT_TEST

@@ -151,7 +151,7 @@ void data_nodes_init()
     }
 }
 
-char *process_ts_request(char *req, uint8_t CAN_Address)
+char *process_ts_request(char *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
 {
     if (req[strlen(req) - 1] == '\n') {
         req[strlen(req) - 1] = '\0';
@@ -179,15 +179,15 @@ TSResponse *process_local_request(char *req, uint8_t CAN_Address)
     }
     TSResponse *res = reinterpret_cast<TSResponse*>(malloc(sizeof(TSResponse)));
 
-    res->block = process_ts_request(req, 0);
-    res->data = ts_resp_data(res->block);
+    res->block = process_ts_request(req, 0, 0, 0);
+    res->data = ts_serial_resp_data(res);
 
     if (res->block == NULL) {
         ESP_LOGE(TAG, "ThingsetError, unable to process request");
         res->ts_status_code = TS_STATUS_INTERNAL_SERVER_ERR;
         return res;
     }
-    res->ts_status_code = ts_resp_status(res->block);
+    res->ts_status_code = ts_serial_resp_status(res->block);
     return res;
 }
 
@@ -266,8 +266,11 @@ void config_nodes_save(const char *node)
     char *ts_request = build_query(TS_GET, (char*) node, NULL);
     int len = ts.process((uint8_t *) ts_request, strlen(ts_request), (uint8_t *) response, res_len);
     ESP_LOGD(TAG, "Got response to query: %s", response);
-    char *json_start = ts_resp_data(response);
+    TSResponse res;
+    res.block = response;
+    char *json_start = ts_serial_resp_data(&res);
     len = len - (json_start - response);
+    ESP_LOGI(TAG, "Length of blob: %d", len);
     ret = nvs_set_blob(handle, node, json_start, len);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Unable to write to NVS, Error: %d", ret);
@@ -334,7 +337,7 @@ char *build_query(uint8_t method, char *node, char *payload)
     char base_node[32] = {"conf/"};
     params.ts_payload = payload;
     params.ts_target_node = strcat(base_node, node);
-    char *ts_request = ts_build_query(method, &params);
+    char *ts_request = ts_build_query_serial(method, &params, 0);
     //eliminate \n termination used for serial requests
     ts_request[strlen(ts_request) -1] = '\0';
     ESP_LOGD(TAG, "Build query to patch node values: %s", ts_request);

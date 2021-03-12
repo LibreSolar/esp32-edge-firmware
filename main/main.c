@@ -67,10 +67,7 @@ void app_main(void)
         can_setup();
         xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096,
         NULL, RX_TASK_PRIO, NULL, 1);
-        xTaskCreatePinnedToCore(isotp_task, "CAN_isotp", 1024,
-        NULL, RX_TASK_PRIO, NULL, 1);
     }
-
 
     if (general_config.ts_serial_active) {
         ts_serial_setup();

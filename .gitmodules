@@ -4,3 +4,9 @@
 [submodule "lib/thingset"]
 	path = lib/thingset
 	url = https://github.com/LibreSolar/thingset-device-library.git
+[submodule "lib/tinycbor"]
+	path = lib/tinycbor
+	url = https://github.com/intel/tinycbor.git
+[submodule "lib/cjson"]
+	path = lib/cjson
+	url = https://github.com/DaveGamble/cJSON.git

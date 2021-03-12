@@ -15,6 +15,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+#include "freertos/queue.h"
 
 #include "esp_system.h"
 #include "esp_err.h"
@@ -32,6 +33,8 @@ bool update_bms_received = false;
 bool update_mppt_received = false;
 
 
+xQueueHandle receive_queue;
+#define RECV_QUEUE_SIZE 1   // there should never be a message
 #define ISOTP_BUFSIZE 512
 
 /* Alloc IsoTpLink statically in RAM */
@@ -212,6 +215,12 @@ void can_setup()
         return;
     }
 
+    receive_queue = xQueueCreate(RECV_QUEUE_SIZE, sizeof(RecvMsg));
+    if (!receive_queue) {
+        ESP_LOGE(TAG, "Failed to create receiving queue");
+        return;
+    }
+
     /* Initialize link with the CAN ID we send with */
     isotp_init_link(&isotp_link, can_addr_server << 8 | can_addr_client | 0x1ada << 16,
         isotp_send_buf, sizeof(isotp_send_buf), isotp_recv_buf, sizeof(isotp_recv_buf));
@@ -240,9 +249,15 @@ void can_receive_task(void *arg)
                 uint16_t out_size;
                 int ret = isotp_receive(&isotp_link, payload, sizeof(payload) - 1, &out_size);
                 if (ret == ISOTP_RET_OK) {
-                    payload[out_size] = '\0';
                     ESP_LOGI(TAG, "Received %d bytes via ISO-TP: %s", out_size, payload);
-                    /* ToDo: handle received message */
+                    RecvMsg msg;
+                    uint8_t *data = malloc(out_size);
+                    memcpy(data, payload, out_size);
+                    msg.data = data;
+                    msg.len = out_size;
+                    if (!xQueueSend(receive_queue, &msg, pdMS_TO_TICKS(10))) {
+                        free(data);
+                    }
                 }
             }
             else {
@@ -283,22 +298,22 @@ void can_receive_task(void *arg)
     }
 }
 
-/* dummy task to send regular requests for testing */
-void isotp_task(void *arg)
+char *ts_can_send(char *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
 {
-    //uint8_t ts_request[] = { 0x01, 0x18, 0x70, 0xA0 };
-    uint8_t ts_request[] = "?output";
+    RecvMsg msg;
+    // empty queue before request, don't block if empty and
+    // dismiss data if present
+    if (xQueueReceive(receive_queue, &msg, 0)) {
+        free(msg.data);
+    }
 
-    while (1) {
+    isotp_send_with_id(&isotp_link, CAN_Address, (uint8_t *) req, query_size);
 
-        int ret = isotp_send(&isotp_link, ts_request, strlen((char *)ts_request));
-        if (ISOTP_RET_OK == ret) {
-            printf("ISOTP Send OK\n");
-        } else {
-            printf("ISOTP Send ERROR\n");
-        }
-
-        vTaskDelay(3000 / portTICK_PERIOD_MS);
+    if (xQueueReceive(receive_queue, &msg, pdMS_TO_TICKS(200))) {
+        *block_len = msg.len;
+        return (char *) msg.data;
+    } else {
+        return NULL;
     }
 }
 
