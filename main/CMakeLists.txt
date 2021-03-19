@@ -21,6 +21,7 @@ set(app_sources
 	"../lib/thingset/src/jsmn.c"
 	"data_nodes.cpp"
 	"ts_cbor.c"
+	"ota.c"
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS ".")
