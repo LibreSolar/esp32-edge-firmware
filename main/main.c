@@ -37,11 +37,14 @@
 #include "web_fs.h"
 #include "web_server.h"
 #include "provisioning.h"
+#include "ota.h"
 
 #define RX_TASK_PRIO    9       // receiving task priority
 
 void app_main(void)
 {
+    check_image();
+
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());

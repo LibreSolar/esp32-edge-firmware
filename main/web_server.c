@@ -17,6 +17,7 @@
 
 #include "ts_serial.h"
 #include "ts_client.h"
+#include "ota.h"
 
 //just temporary until we implemented a way to select the chip
 #include "stm32bl.h"
@@ -234,7 +235,7 @@ static esp_err_t ts_handler(httpd_req_t *req)
     return send_response(req, res);
 }
 
-static esp_err_t ota_start_handler(httpd_req_t *req)
+static esp_err_t stm_ota_start_handler(httpd_req_t *req)
 {
     char *uri = (char *) heap_caps_malloc(13, MALLOC_CAP_8BIT);
     strncpy(uri, req->uri + url_offset_ota, 7);
@@ -270,7 +271,7 @@ static esp_err_t ota_start_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-esp_err_t ota_upload_handler(httpd_req_t *req)
+esp_err_t stm_ota_upload_handler(httpd_req_t *req)
 {
     if (req->content_len > 0x20000) {
         httpd_resp_set_status(req, "413");
@@ -306,6 +307,27 @@ out:
     free(buf);
     fclose(fd);
     return ESP_OK;
+}
+
+esp_err_t esp_ota_upload_handler(httpd_req_t *req)
+{
+    cJSON *res = cJSON_CreateObject();
+    esp_err_t err = esp_ota_handler(req, res);
+    char *res_string = cJSON_Print(res);
+    cJSON_Delete(res);
+
+    if (err == ESP_OK) {
+        httpd_resp_set_status(req, "200");
+        httpd_resp_sendstr(req, res_string);
+
+        //should be done after handler returns, maybe spawn a separate task which resets the device after some time
+        xTaskCreate(reset_device, "reset_task", 512, NULL, 0, NULL);
+    } else {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, res_string);
+        err = ESP_FAIL;
+    }
+    free(res_string);
+    return err;
 }
 
 esp_err_t start_web_server(const char *base_path)
@@ -383,7 +405,7 @@ esp_err_t start_web_server(const char *base_path)
     httpd_uri_t ota_start_uri = {
         .uri = "/api/v1/ota/*",
         .method = HTTP_GET,
-        .handler = ota_start_handler,
+        .handler = stm_ota_start_handler,
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ota_start_uri);
@@ -391,7 +413,7 @@ esp_err_t start_web_server(const char *base_path)
      httpd_uri_t ota_upload_uri = {
         .uri = "/api/v1/ota/upload",
         .method = HTTP_POST,
-        .handler = ota_upload_handler,
+        .handler = stm_ota_upload_handler,
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ota_upload_uri);
