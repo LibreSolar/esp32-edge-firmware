@@ -4,6 +4,7 @@ set(app_sources
 	"main.c"
 	"ts_client.c"
 	"ts_serial.c"
+	"ts_mqtt.c"
 	"can.c"
 	"emoncms.c"
 	"stm32bl.c"

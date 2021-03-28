@@ -59,9 +59,44 @@ menu "User Configuration"
             Specify the default host name for this device. It shall be user-configurable in
             the future.
 
-    config EMONCMS
-        bool "OpenEnergyMonitor Emoncms support"
+    menuconfig THINGSET_MQTT
+        bool "ThingSet MQTT support"
+        default n
+        help
+            Currently disabled by default to pass CI, as it is not compatible with outdated
+            ESP-IDF release used by PlatformIO.
+
+    config THINGSET_MQTT_BROKER_URI
+        string "Hostname of MQTT broker"
+        depends on THINGSET_MQTT
+        default "mqtts://mqtt.eclipseprojects.io:8883"
+
+    config THINGSET_MQTT_TLS
+        bool "Use secure MQTT connection via TLS (recommended)"
+        depends on THINGSET_MQTT
         default y
+
+    config THINGSET_MQTT_AUTHENTICATION
+        bool "Use MQTT broker authentication"
+        depends on THINGSET_MQTT
+        default y
+
+    config THINGSET_MQTT_USER
+        string "MQTT username"
+        depends on THINGSET_MQTT_AUTHENTICATION
+
+    config THINGSET_MQTT_PASS
+        string "MQTT password"
+        depends on THINGSET_MQTT_AUTHENTICATION
+
+    config THINGSET_MQTT_PUBLISH_INTERVAL
+        int "MQTT publish interval in seconds"
+        depends on THINGSET_MQTT
+        default 10
+
+    menuconfig EMONCMS
+        bool "OpenEnergyMonitor Emoncms support"
+        default n
 
     config EMONCMS_HOST
         string "Hostname of Emoncms server"
