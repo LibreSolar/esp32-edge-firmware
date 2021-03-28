@@ -31,6 +31,7 @@
 
 #include "ts_serial.h"
 #include "ts_client.h"
+#include "ts_mqtt.h"
 #include "can.h"
 #include "emoncms.h"
 #include "wifi.h"
@@ -84,8 +85,11 @@ void app_main(void)
     start_web_server("/www");
 
 #if CONFIG_EMONCMS
-    xTaskCreate(&emoncms_post_task, "emoncms_post_task", 4096,
-        NULL, 5, NULL);
+    xTaskCreate(&emoncms_post_task, "emoncms_post_task", 4096, NULL, 5, NULL);
+#endif
+
+#if CONFIG_THINGSET_MQTT
+    xTaskCreate(&ts_mqtt_pub_task, "mqtt_pub", 4096, NULL, 5, NULL);
 #endif
 }
 
