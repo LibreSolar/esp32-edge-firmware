@@ -36,6 +36,11 @@ void ts_scan_devices()
 
 char *ts_get_device_list()
 {
+    if (devices[0] == NULL) {
+        // scan again if no devices were found
+        ts_scan_devices();
+    }
+
     cJSON *obj = cJSON_CreateObject();
     int i = 0;
     while (devices[i] != NULL) {
