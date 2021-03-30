@@ -246,7 +246,9 @@ int ts_serial_scan_device_info(TSDevice *device)
     }
 
     char *resp = ts_serial_response(500);
-    int status = ts_serial_resp_status(resp != NULL ? resp : "");
+    TSResponse res;
+    res.block = resp != NULL ? resp : "";
+    int status = ts_serial_resp_status(&res);
     if (status != TS_STATUS_CONTENT) {
         ESP_LOGE(TAG, "Could not retrieve device information: Code %d", status);
         ts_serial_response_clear();
@@ -261,7 +263,8 @@ int ts_serial_scan_device_info(TSDevice *device)
     }
 
     resp = ts_serial_response(500);
-    status = ts_serial_resp_status(resp != NULL ? resp : "");
+    res.block = resp != NULL ? resp : "";
+    status = ts_serial_resp_status(&res);
     if (status != TS_STATUS_CONTENT) {
         ESP_LOGE(TAG, "Could not retrieve device information: Code %d", status);
         ts_serial_response_clear();

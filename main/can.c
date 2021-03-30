@@ -27,6 +27,8 @@
 #include "../lib/isotp/isotp.h"
 #include "../lib/isotp/isotp_defines.h"
 
+#include "ts_client.h"
+#include "ts_cbor.h"
 static const char *TAG = "can";
 
 bool update_bms_received = false;
@@ -34,7 +36,7 @@ bool update_mppt_received = false;
 
 
 xQueueHandle receive_queue;
-#define RECV_QUEUE_SIZE 1   // there should never be a message
+#define RECV_QUEUE_SIZE 1
 #define ISOTP_BUFSIZE 512
 
 /* Alloc IsoTpLink statically in RAM */
@@ -198,6 +200,7 @@ char *get_bms_json_data()
 
 void can_setup()
 {
+
 #ifdef GPIO_CAN_STB
     // switch CAN transceiver on (STB = low)
     gpio_pad_select_gpio(CONFIG_GPIO_CAN_STB);
@@ -233,20 +236,22 @@ void can_receive_task(void *arg)
     unsigned int data_node_id;
 
     uint8_t payload[500];
-
+    int ret;
     while (1) {
-        if (can_receive(&message, pdMS_TO_TICKS(10000)) == ESP_OK) {
+        ret = can_receive(&message, pdMS_TO_TICKS(10000));
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "Received Can Msg");
 
             /* checking for CAN ID used to receive ISO-TP frames */
             if (message.identifier == (can_addr_client << 8 | can_addr_server | 0x1ada << 16)) {
-                ESP_LOGI(TAG, "ISO TP msg part received");
+                ESP_LOGI(TAG, "ISO TP msg part received: %.8s", message.data);
                 isotp_on_can_message(&isotp_link, message.data, message.data_length_code);
 
                 /* process multiple frame transmissions and timeouts */
                 isotp_poll(&isotp_link);
 
                 /* extract received data */
-                uint16_t out_size;
+                uint16_t out_size = 0;
                 int ret = isotp_receive(&isotp_link, payload, sizeof(payload) - 1, &out_size);
                 if (ret == ISOTP_RET_OK) {
                     ESP_LOGI(TAG, "Received %d bytes via ISO-TP: %s", out_size, payload);
@@ -257,10 +262,11 @@ void can_receive_task(void *arg)
                     msg.len = out_size;
                     if (!xQueueSend(receive_queue, &msg, pdMS_TO_TICKS(10))) {
                         free(data);
+                    } else if (ret == ISOTP_RET_NO_DATA) {
+                        ESP_LOGE(TAG, "isotp_receive(): No Data Received");
                     }
                 }
-            }
-            else {
+            } else {
                 // ThingSet publication message format: https://thingset.github.io/spec/can
                 device_addr = message.identifier & 0x000000FF;
                 data_node_id = (message.identifier >> 8) & 0x0000FFFF;
@@ -285,36 +291,55 @@ void can_receive_task(void *arg)
                     }
                     update_mppt_received = true;
                 }
-
-                printf("CAN device addr %u, data node 0x%.2x = 0x", device_addr, data_node_id);
+                ESP_LOGI(TAG, "Received pub-msg on CAN");
                 if (!(message.flags & CAN_MSG_FLAG_RTR)) {
                     for (int i = 0; i < message.data_length_code; i++) {
-                        printf("%.2x", message.data[i]);
+                        ESP_LOGI(TAG, "Message is: %.8s", message.data);
                     }
                 }
-                printf("\n");
+            }
+        } else {
+            if (ret == ESP_ERR_TIMEOUT) {
+                ESP_LOGE(TAG, "Received timed out");
+            } else if (ret == ESP_ERR_INVALID_STATE) {
+                ESP_LOGE(TAG, "Driver in invalid state");
             }
         }
     }
 }
 
-char *ts_can_send(char *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
+char *ts_can_send(uint8_t *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
 {
     RecvMsg msg;
     // empty queue before request, don't block if empty and
     // dismiss data if present
-    if (xQueueReceive(receive_queue, &msg, 0)) {
+    if (xQueueReceive(receive_queue, &msg, 100)) {
         free(msg.data);
     }
-
-    isotp_send_with_id(&isotp_link, CAN_Address, (uint8_t *) req, query_size);
-
-    if (xQueueReceive(receive_queue, &msg, pdMS_TO_TICKS(200))) {
+    ESP_LOGI(TAG, "Sending out msg: %s with len: %d", req, query_size);
+    int ret = isotp_send(&isotp_link, (uint8_t *)"?info", 5);
+    if (ISOTP_RET_OK == ret) {
+            printf("ISOTP Send OK\n");
+        } else {
+            printf("ISOTP Send ERROR\n");
+        }
+    if (xQueueReceive(receive_queue, &msg, pdMS_TO_TICKS(500))) {
         *block_len = msg.len;
         return (char *) msg.data;
-    } else {
-        return NULL;
     }
+    return NULL;
+}
+
+int ts_can_scan_device_info(TSDevice *device){
+    uint8_t query[] = "?info";
+    uint32_t resp_len = 0;
+    char * response = ts_can_send(query, strlen((char *) query), can_addr_server, &resp_len);
+    if (response != NULL) {
+        ESP_LOGI(TAG, "Got Response: %s", response);
+    } else {
+        ESP_LOGE(TAG, "No Response");
+    }
+    return 1;
 }
 
 #endif // UNIT_TEST

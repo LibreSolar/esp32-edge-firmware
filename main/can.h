@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "ts_client.h"
 
 typedef struct {
     int id;
@@ -28,6 +29,8 @@ typedef struct {
     uint8_t * data;
     int len;
 } RecvMsg;
+
+int ts_can_scan_device_info(TSDevice *device);
 
 /**
  * Initiate the CAN interface.

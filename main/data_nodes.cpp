@@ -169,6 +169,7 @@ char *process_ts_request(char *req, uint32_t query_size, uint8_t CAN_Address, ui
     }
     memcpy(resp, buf, len);
     resp[len] = '\0';
+    *block_len = len;
     return resp;
 }
 
@@ -187,7 +188,7 @@ TSResponse *process_local_request(char *req, uint8_t CAN_Address)
         res->ts_status_code = TS_STATUS_INTERNAL_SERVER_ERR;
         return res;
     }
-    res->ts_status_code = ts_serial_resp_status(res->block);
+    res->ts_status_code = ts_serial_resp_status(res);
     return res;
 }
 
@@ -270,7 +271,6 @@ void config_nodes_save(const char *node)
     res.block = response;
     char *json_start = ts_serial_resp_data(&res);
     len = len - (json_start - response);
-    ESP_LOGI(TAG, "Length of blob: %d", len);
     ret = nvs_set_blob(handle, node, json_start, len);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Unable to write to NVS, Error: %d", ret);
