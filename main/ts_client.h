@@ -87,7 +87,7 @@ typedef struct {
     char *(*send)(char *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len);
     char *(*build_query)(uint8_t ts_method, TSUriElems *params, uint32_t* query_size);
     char *(*ts_resp_data)(TSResponse *res);
-    int (*ts_resp_status)(char *resp);
+    uint8_t (*ts_resp_status)(TSResponse *res);
 } TSDevice;
 
 /**
@@ -100,7 +100,7 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method);
 
 char *ts_serial_resp_data(TSResponse *res);
 
-int ts_serial_resp_status(char *resp);
+uint8_t ts_serial_resp_status(TSResponse *res);
 
 /**
  * Initializes the internal device list and scans

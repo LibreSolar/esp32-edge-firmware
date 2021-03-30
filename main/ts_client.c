@@ -13,6 +13,7 @@
 #ifndef UNIT_TEST
 
 #include "ts_serial.h"
+#include "can.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
 #include "cJSON.h"
@@ -31,6 +32,9 @@ void ts_scan_devices()
     devices[0]->ts_name = "self";
     devices[0]->CAN_Address = 0;
     devices[0]->send = &process_ts_request;
+    devices[0]->build_query = &ts_build_query_serial;
+    devices[0]->ts_resp_data = &ts_serial_resp_data;
+    devices[0]->ts_resp_status = &ts_serial_resp_status;
 
     devices[1] = (TSDevice *) malloc(sizeof(TSDevice));
     //scan serial connection
@@ -39,7 +43,14 @@ void ts_scan_devices()
         devices[1] = NULL;
     };
 
-    //TODO scan CAN connection
+    //scan CAN connection
+
+    devices[2] = (TSDevice *) malloc(sizeof(TSDevice));
+
+    if (ts_can_scan_device_info(devices[2]) != 0) {
+        free(devices[2]);
+        devices[2] = NULL;
+    }
 }
 
 char *ts_get_device_list()
@@ -256,7 +267,7 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
         return NULL;
     }
     //call status code first, data will be overwritten when device is using CAN
-    res->ts_status_code = device->ts_resp_status(res->block);
+    res->ts_status_code = device->ts_resp_status(res);
     res->data = device->ts_resp_data(res);
 
     heap_caps_free(ts_query_string);
@@ -276,10 +287,10 @@ char *ts_serial_resp_data(TSResponse *res)
     return NULL;
 }
 
-int ts_serial_resp_status(char *resp)
+uint8_t ts_serial_resp_status(TSResponse *res)
 {
     unsigned int status_code = -1;
-    sscanf(resp, ":%X ", &status_code);
+    sscanf(res->block, ":%X ", &status_code);
     return status_code;
 }
 
