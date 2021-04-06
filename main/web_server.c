@@ -236,9 +236,9 @@ static esp_err_t ts_handler(httpd_req_t *req)
 
 static esp_err_t ota_start_handler(httpd_req_t *req)
 {
-    char *uri = (char *) heap_caps_malloc(13, MALLOC_CAP_8BIT);
-    strncpy(uri, req->uri + url_offset_ota, 7);
-    strcpy(uri + 7, "/info");
+    char *uri = (char *) heap_caps_malloc(14, MALLOC_CAP_8BIT);
+    strncpy(uri, req->uri + url_offset_ota, 8);
+    strcpy(uri + 8, "/info");
 
     TSResponse *res = ts_execute(uri, NULL, HTTP_GET);
     if (res == NULL) {
@@ -252,6 +252,10 @@ static esp_err_t ota_start_handler(httpd_req_t *req)
     }
     cJSON *flash_size = cJSON_GetObjectItemCaseSensitive(info, "FlashSize_kb");
     cJSON *page_size = cJSON_GetObjectItemCaseSensitive(info, "FlashPageSize_kb");
+    if (flash_size == NULL || page_size == NULL) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST , "Device does not support updates yet");
+        return ESP_OK;
+    }
 
     httpd_resp_set_type(req, "text/plain");
 
