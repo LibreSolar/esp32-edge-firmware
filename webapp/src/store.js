@@ -64,6 +64,8 @@ export default new Vuex.Store({
           if (res.data) {
             commit('saveDevices', res.data)
         }
+      }).catch(error => {
+        console.log(error);
       })
     },
     initChartData( { commit }) {
