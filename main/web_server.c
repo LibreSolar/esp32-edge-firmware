@@ -236,33 +236,38 @@ static esp_err_t ts_handler(httpd_req_t *req)
     return send_response(req, res);
 }
 
+// There should be no "/" at the end of the url or this function won't work properly
 static esp_err_t ota_start_handler(httpd_req_t *req)
 {
-    char *uri = (char *) heap_caps_malloc(14, MALLOC_CAP_8BIT);
-    strncpy(uri, req->uri + url_offset_ota, 8);
-    strcpy(uri + 8, "/info");
+    const char endpoint[] = "/dfu";
+    int id_len = strlen(req->uri + url_offset_ota);
+
+    char *uri = (char *) malloc(sizeof(endpoint) + id_len);
+    strncpy(uri, req->uri + url_offset_ota, id_len);
+    strcpy(uri + id_len, "/dfu");
+    ESP_LOGI(TAG, "URL: %s", uri);
 
     TSResponse *res = ts_execute(uri, NULL, HTTP_GET);
+    free(uri);
     if (res == NULL) {
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Device not connected");
         return ESP_OK;
     }
+
     cJSON *info = cJSON_Parse(res->data);
     if (info == NULL) {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Unable to parse device information");
         return ESP_OK;
     }
-    cJSON *flash_size = cJSON_GetObjectItemCaseSensitive(info, "FlashSize_kb");
-    cJSON *page_size = cJSON_GetObjectItemCaseSensitive(info, "FlashPageSize_kb");
+    cJSON *flash_size = cJSON_GetObjectItemCaseSensitive(info, "FlashSize_KiB");
+    cJSON *page_size = cJSON_GetObjectItemCaseSensitive(info, "FlashPageSize_B");
     if (flash_size == NULL || page_size == NULL) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST , "Device does not support updates yet");
         return ESP_OK;
     }
-
     httpd_resp_set_type(req, "text/plain");
 
     int ret = ts_serial_ota(flash_size->valueint, page_size->valueint);
-
     /* Give it time to reboot, otherwise subsequent request could fail */
     vTaskDelay(pdMS_TO_TICKS(1000));
 

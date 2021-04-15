@@ -290,9 +290,9 @@ int ts_serial_scan_device_info(TSDevice *device)
 esp_err_t ts_serial_ota(int flash_size, int page_size)
 {
     int ret = ESP_FAIL;
-    uint16_t pages = flash_size / page_size;
+    uint16_t pages = flash_size * 1024 / page_size;
 
-    ts_serial_request("!exec/bootloader-stm\n", 100);
+    ts_serial_request("!dfu/bootloader-stm\n", 100);
     ts_serial_response_clear();
 
     // prevent further UART access in RX thread
@@ -302,20 +302,21 @@ esp_err_t ts_serial_ota(int flash_size, int page_size)
         return ret;
     }
 
-    vTaskDelay(pdMS_TO_TICKS(200));
+    vTaskDelay(pdMS_TO_TICKS(500));
     uart_flush(uart_num);
     uart_set_parity(uart_num, UART_PARITY_EVEN);
     uint32_t bytes_read = 0;
     uint8_t buf[page_size];
     FILE * f = NULL;
+    int id = 0;
 
     if (stm32bl_init() != STM32BL_ACK) {
         ESP_LOGE(TAG, "Init failed");
         goto out;
     }
-
+    id = stm32bl_get_id();
     ESP_LOGD(TAG, "STM32BL version: 0x%x", stm32bl_get_version());
-    ESP_LOGD(TAG, "STM32BL pid: 0x%x", stm32bl_get_id());
+    ESP_LOGD(TAG, "STM32BL pid: 0x%x", id);
 
     f = fopen("/stm_ota/firmware.bin", "r");
     if (f == NULL) {
@@ -323,16 +324,19 @@ esp_err_t ts_serial_ota(int flash_size, int page_size)
         goto out;
     }
 
-    if (stm32bl_erase_all(pages) != STM32BL_ACK) {
+    ESP_LOGD(TAG, "Going to erase %u pages", pages);
+    if (stm32bl_erase_all(pages) != ESP_OK) {
         ESP_LOGE(TAG, "Mass erase failed");
         goto out;
     }
-
     uint32_t address = STM32_FLASH_START_ADDR;
+
+    // The maximum block the stm bootloader can handle is 256 bytes
+    uint32_t block_size = 128;
     while (true) {
-        bytes_read = fread(buf, 1, page_size, f);
+        bytes_read = fread(buf, 1, block_size, f);
         if (bytes_read == EOF || bytes_read == 0) {
-            ESP_LOGD(TAG, "Reading and sending of firmware file finished");
+            ESP_LOGD(TAG, "Reading and sending of firmware file finished. Wrote %d bytes", address - STM32_FLASH_START_ADDR);
             ret = ESP_OK;
             goto out;
         }
@@ -347,7 +351,11 @@ out:
     if (f != NULL) {
         fclose(f);
     }
-    stm32bl_reset_device();
+
+    // wait a bit to let the stm32 finish writing
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    ret = stm32bl_reset_device(id);
+
     uart_set_parity(uart_num, UART_PARITY_DISABLE);
     xSemaphoreGive(uart_lock);
     return ret;

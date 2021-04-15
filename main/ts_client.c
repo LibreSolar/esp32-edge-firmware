@@ -95,7 +95,9 @@ static int strlen_null(char *r)
 
 char *exec_or_create(char *node)
 {
-    if (strstr(node, "auth") != NULL || strstr(node, "exec") != NULL) {
+    if (strstr(node, "auth") != NULL ||
+        strstr(node, "exec") != NULL ||
+        strstr(node, "dfu") != NULL) {
         return "!";
     } else {
         return "+";
