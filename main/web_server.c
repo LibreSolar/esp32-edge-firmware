@@ -17,6 +17,7 @@
 
 #include "ts_serial.h"
 #include "ts_client.h"
+#include "config_nodes.h"
 
 //just temporary until we implemented a way to select the chip
 #include "stm32bl.h"
@@ -25,6 +26,7 @@ static const char *TAG = "websrv";
 
 int url_offset_ts;
 int url_offset_ota;
+int url_offset_config;
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
 #define SCRATCH_BUFSIZE (10240)
@@ -156,7 +158,7 @@ static esp_err_t common_get_handler(httpd_req_t *req)
 static char *receive_content(httpd_req_t *req)
 {
     // +1 for termination
-    char *buf = heap_caps_malloc(req->content_len+1, MALLOC_CAP_8BIT);
+    char *buf = (char *) malloc(req->content_len+1);
     if (buf == NULL) {
         ESP_LOGE(TAG, "Unable to allocate memory for content");
         return NULL;
@@ -285,7 +287,7 @@ esp_err_t ota_upload_handler(httpd_req_t *req)
     unsigned int bytes_received = 0;
     unsigned int bytes_written = 0;
     int buffer_size = 8 * 1024;
-    char * buf = malloc(buffer_size);
+    char * buf = (char *) malloc(buffer_size);
     FILE *fd = fopen("/stm_ota/firmware.bin", "w");
     if (fd == NULL) {
         ESP_LOGE(TAG, "Failed to create file for image");
@@ -312,6 +314,8 @@ out:
     return ESP_OK;
 }
 
+
+
 esp_err_t start_web_server(const char *base_path)
 {
     if (base_path == NULL) {
@@ -319,7 +323,7 @@ esp_err_t start_web_server(const char *base_path)
         return ESP_FAIL;
     }
 
-    web_server_context_t *server_ctx = calloc(1, sizeof(web_server_context_t));
+    web_server_context_t *server_ctx = (web_server_context_t *) calloc(1, sizeof(web_server_context_t));
     if (server_ctx == NULL) {
         ESP_LOGE(TAG, "No memory for web server");
         return ESP_FAIL;
@@ -330,11 +334,13 @@ esp_err_t start_web_server(const char *base_path)
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
     config.core_id = 1;
+    config.max_uri_handlers = 16;
     config.stack_size = 8*1024;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
     url_offset_ts = strlen("/api/v1/ts/");
     url_offset_ota = strlen("/api/v1/ota/");
+    url_offset_config = strlen("/api/v1/config/");
 
     if (httpd_start(&server, &config) != ESP_OK) {
         ESP_LOGE(TAG, "Start server failed");
@@ -392,14 +398,13 @@ esp_err_t start_web_server(const char *base_path)
     };
     httpd_register_uri_handler(server, &ota_start_uri);
 
-     httpd_uri_t ota_upload_uri = {
+    httpd_uri_t ota_upload_uri = {
         .uri = "/api/v1/ota/upload",
         .method = HTTP_POST,
         .handler = ota_upload_handler,
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ota_upload_uri);
-
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {

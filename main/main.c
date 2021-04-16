@@ -38,8 +38,12 @@
 #include "web_fs.h"
 #include "web_server.h"
 #include "provisioning.h"
+#include "config_nodes.h"
 
 #define RX_TASK_PRIO    9       // receiving task priority
+extern EmoncmsConfig emon_config;
+extern MqttConfig mqtt_config;
+extern GeneralConfig general_config;
 
 void app_main(void)
 {
@@ -47,24 +51,26 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
+    data_nodes_init();
+
     // configure the LED pad as GPIO and set direction
     gpio_pad_select_gpio(CONFIG_GPIO_LED);
     gpio_set_direction(CONFIG_GPIO_LED, GPIO_MODE_OUTPUT);
     gpio_set_level(CONFIG_GPIO_LED, 1);
-
     // wait 3s to open serial terminal after flashing finished
     vTaskDelay(3000 / portTICK_PERIOD_MS);
     printf("Booting Libre Solar Data Manager...\n");
 
     init_fs();
 
-#if CONFIG_THINGSET_CAN
-    can_setup();
-    xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096,
+    if (general_config.ts_can_active) {
+        can_setup();
+        xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096,
         NULL, RX_TASK_PRIO, NULL, 1);
-    xTaskCreatePinnedToCore(isotp_task, "CAN_isotp", 1024,
+        xTaskCreatePinnedToCore(isotp_task, "CAN_isotp", 1024,
         NULL, RX_TASK_PRIO, NULL, 1);
-#endif
+    }
+
 
 #if CONFIG_THINGSET_SERIAL
     ts_serial_setup();

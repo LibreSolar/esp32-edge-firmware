@@ -10,17 +10,14 @@ menu "Board Selection"
 
     config GPIO_CAN_RX
         int "GPIO pin of CAN RX"
-        depends on THINGSET_CAN
         default 4
 
     config GPIO_CAN_TX
         int "GPIO pin of CAN TX"
-        depends on THINGSET_CAN
         default 5
 
     config GPIO_CAN_STB
         int "GPIO pin of CAN standby"
-        depends on THINGSET_CAN
         default 12
 
     config THINGSET_SERIAL
@@ -29,12 +26,10 @@ menu "Board Selection"
 
     config GPIO_UART_RX
         int "GPIO pin of UART RX"
-        depends on THINGSET_SERIAL
         default 16
 
     config GPIO_UART_TX
         int "GPIO pin of UART TX"
-        depends on THINGSET_SERIAL
         default 17
 
 endmenu
@@ -68,17 +63,14 @@ menu "User Configuration"
 
     config THINGSET_MQTT_BROKER_URI
         string "Hostname of MQTT broker"
-        depends on THINGSET_MQTT
         default "mqtts://mqtt.eclipseprojects.io:8883"
 
     config THINGSET_MQTT_TLS
         bool "Use secure MQTT connection via TLS (recommended)"
-        depends on THINGSET_MQTT
         default y
 
     config THINGSET_MQTT_AUTHENTICATION
         bool "Use MQTT broker authentication"
-        depends on THINGSET_MQTT
         default y
 
     config THINGSET_MQTT_USER
@@ -91,7 +83,6 @@ menu "User Configuration"
 
     config THINGSET_MQTT_PUBLISH_INTERVAL
         int "MQTT publish interval in seconds"
-        depends on THINGSET_MQTT
         default 10
 
     menuconfig EMONCMS
@@ -100,22 +91,18 @@ menu "User Configuration"
 
     config EMONCMS_HOST
         string "Hostname of Emoncms server"
-        depends on EMONCMS
         default "emoncms.org"
 
     config EMONCMS_PORT
         string "Port of Emoncms server"
-        depends on EMONCMS
         default "80"
 
     config EMONCMS_URL
         string "URL of Emoncms post API endpoint"
-        depends on EMONCMS
         default "/emoncms/input/post"
 
     config EMONCMS_APIKEY
         string "API key for Emoncms access"
-        depends on EMONCMS
         default ""
 
     config EMONCMS_NODE_SERIAL
@@ -125,12 +112,10 @@ menu "User Configuration"
 
     config EMONCMS_NODE_MPPT
         string "Node name of MPPT connected via CAN"
-        depends on EMONCMS
         default "mppt"
 
     config EMONCMS_NODE_BMS
         string "Node name of BMS connected via CAN"
-        depends on EMONCMS
         default "bms"
 
 endmenu

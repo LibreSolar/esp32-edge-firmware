@@ -14,6 +14,12 @@ set(app_sources
 	"provisioning.c"
 	"../lib/isotp/isotp.c"
 	"isotp_user.c"
+	"../lib/thingset/src/thingset.cpp"
+	"../lib/thingset/src/thingset_bin.cpp"
+	"../lib/thingset/src/thingset_txt.cpp"
+	"../lib/thingset/src/cbor.c"
+	"../lib/thingset/src/jsmn.c"
+	"config_nodes.cpp"
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS ".")

@@ -17,18 +17,27 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "cJSON.h"
+#include "config_nodes.h"
 
 static const char *TAG = "ts_client";
 
 static TSDevice *devices[10];
+extern char device_id[9];
 
 void ts_scan_devices()
 {
-    //scan serial connection
+    // Add self to devices
     devices[0] = (TSDevice *) malloc(sizeof(TSDevice));
-    if (ts_serial_scan_device_info(devices[0]) != 0) {
-        free(devices[0]);
-        devices[0] = NULL;
+    devices[0]->ts_device_id = device_id;
+    devices[0]->ts_name = CONFIG_DEVICE_HOSTNAME;
+    devices[0]->CAN_Address = 0;
+    devices[0]->send = &process_ts_request;
+
+    devices[1] = (TSDevice *) malloc(sizeof(TSDevice));
+    //scan serial connection
+    if (ts_serial_scan_device_info(devices[1]) != 0) {
+        free(devices[1]);
+        devices[1] = NULL;
     };
 
     //TODO scan CAN connection
