@@ -5,6 +5,14 @@
         <v-card max-width=600 class="mx-auto my-auto">
           <v-img :src="require('../assets/logo.png')" contain height="200"></v-img>
           <v-card-title primary-title class="justify-center"> Welcome!</v-card-title>
+          <v-card-text v-if="$store.state.selfInfo">
+            <div class="ma-auto">
+              Device ID: <span class="grey--text">{{$store.state.selfInfo.DeviceID}}</span>
+              <br>
+              Manufacturer: <span class="grey--text">{{$store.state.selfInfo.Manufacturer}}</span>
+              <br>
+            </div>
+          </v-card-text>
         </v-card>
       </v-flex>
     </v-layout>
@@ -12,7 +20,5 @@
 </template>
 
 <script>
-export default {
-  
-}
+export default {}
 </script>

@@ -252,18 +252,42 @@ void config_nodes_load_kconfig()
     strncpy(general_config.wifi_ssid, CONFIG_WIFI_SSID, sizeof(general_config.wifi_ssid));
     strncpy(general_config.wifi_password, CONFIG_WIFI_PASSWORD, sizeof(general_config.wifi_password));
     strncpy(general_config.mdns_hostname, CONFIG_DEVICE_HOSTNAME, sizeof(general_config.mdns_hostname));
+    #ifdef CONFIG_THINGSET_CAN
     general_config.ts_can_active = CONFIG_THINGSET_CAN;
+    #else
+    general_config.ts_can_active = false;
+    #endif
+    #ifdef CONFIG_THINGSET_SERIAL
     general_config.ts_serial_active = CONFIG_THINGSET_SERIAL;
+    #else
+    general_config.ts_serial_active = false;
+    #endif
 
+    #ifdef CONFIG_THINGSET_MQTT
     mqtt_config.active = CONFIG_THINGSET_MQTT;
+    #else
+    mqtt_config.active = false;
+    #endif
     strncpy(mqtt_config.broker_hostname, CONFIG_THINGSET_MQTT_BROKER_URI, sizeof(mqtt_config.broker_hostname));
+    #ifdef CONFIG_THINGSET_MQTT_TLS
     mqtt_config.use_ssl = CONFIG_THINGSET_MQTT_TLS;
+    #else
+    mqtt_config.use_ssl = false;
+    #endif
+    #ifdef CONFIG_THINGSET_MQTT_AUTHENTICATION
     mqtt_config.use_broker_auth = CONFIG_THINGSET_MQTT_AUTHENTICATION;
+    #else
+    mqtt_config.use_broker_auth = false;
+    #endif
     strncpy(mqtt_config.username, CONFIG_THINGSET_MQTT_USER, sizeof(mqtt_config.username));
     strncpy(mqtt_config.password, CONFIG_THINGSET_MQTT_PASS, sizeof(mqtt_config.password));
     mqtt_config.pub_interval = CONFIG_THINGSET_MQTT_PUBLISH_INTERVAL;
 
+    #ifdef CONFIG_EMONCMS
     emon_config.active = CONFIG_EMONCMS;
+    #else
+    emon_config.active = false;
+    #endif
     strncpy(emon_config.emoncms_hostname, CONFIG_EMONCMS_HOST, sizeof(emon_config.emoncms_hostname));
     strncpy(emon_config.port, CONFIG_EMONCMS_PORT, sizeof(emon_config.port));
     strncpy(emon_config.url, CONFIG_EMONCMS_URL, sizeof(emon_config.url));

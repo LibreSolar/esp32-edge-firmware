@@ -42,7 +42,6 @@
                 link :to="item.href">
                     <v-list-item-title><v-icon class="mx-1">{{ item.icon }}</v-icon>{{ item.title }}</v-list-item-title>
                 </v-list-item>
-                
                 <v-list-item
                 href="https://github.com/LibreSolar/data-manager-firmware"
                 target="_blank"

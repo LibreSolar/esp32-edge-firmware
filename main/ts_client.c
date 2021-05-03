@@ -29,7 +29,7 @@ void ts_scan_devices()
     // Add self to devices
     devices[0] = (TSDevice *) malloc(sizeof(TSDevice));
     devices[0]->ts_device_id = device_id;
-    devices[0]->ts_name = CONFIG_DEVICE_HOSTNAME;
+    devices[0]->ts_name = "self";
     devices[0]->CAN_Address = 0;
     devices[0]->send = &process_ts_request;
 
