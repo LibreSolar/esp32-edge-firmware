@@ -26,7 +26,6 @@
 
 static const char *TAG = "ts_ser";
 
-#if CONFIG_THINGSET_SERIAL
 
 #define PUBMSG_BUF_SIZE     (1024)
 #define RESP_BUF_SIZE       (1024)
@@ -354,5 +353,4 @@ out:
     return ret;
 }
 
-#endif  // THINGSET_SERIAL
 #endif //UINIT_TEST

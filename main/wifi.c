@@ -20,6 +20,10 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
+#include "config_nodes.h"
+
+extern GeneralConfig general_config;
+
 #define GOT_IPV4_BIT BIT(0)
 #define GOT_IPV6_BIT BIT(1)
 
@@ -140,21 +144,21 @@ static void start(void)
 #endif
 
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = CONFIG_WIFI_SSID,
-            .password = CONFIG_WIFI_PASSWORD,
-        },
-    };
+
+    wifi_config_t wifi_config;
+    bzero(&wifi_config, sizeof(wifi_config_t));
+    memcpy(wifi_config.sta.ssid, general_config.wifi_ssid, sizeof(wifi_config.sta.ssid));
+    memcpy(wifi_config.sta.password, general_config.wifi_password, sizeof(wifi_config.sta.password));
+
     ESP_LOGI(TAG, "Connecting to %s...", wifi_config.sta.ssid);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_ERROR_CHECK(esp_netif_set_hostname(sta_netif, CONFIG_DEVICE_HOSTNAME));
+    ESP_ERROR_CHECK(esp_netif_set_hostname(sta_netif, general_config.mdns_hostname));
 
     ESP_ERROR_CHECK(esp_wifi_connect());
-    s_connection_name = CONFIG_WIFI_SSID;
+    s_connection_name = general_config.wifi_ssid;
 }
 
 static void stop(void)

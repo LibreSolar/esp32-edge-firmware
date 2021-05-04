@@ -44,6 +44,9 @@
           </v-card-text>
         </v-tab-item>
         </v-tabs-items>
+        <v-btn color="secondary" @click="resetDevice()" class="mx-4">
+              <v-icon left>mdi-checkbox-marked-circle</v-icon> Reset Device
+            </v-btn>
           <v-card-text>
             <v-alert
               v-model="alert"
@@ -132,6 +135,23 @@ export default {
       })
       .catch(error => {
         this.status = "Configuration could not be written: " + error.response.status + "-" + error.response.data
+        this.alert_type = "warning"
+        this.alert = true
+        setTimeout(this.clearAlert, 3000);
+      })
+    },
+    resetDevice: function() {
+      let id = this.$store.state.self
+      this.$ajax
+      .post("api/v1/ts/" + id + "/exec/reset")
+      .then(res => {
+        this.alert_type = "success"
+        this.status = "Device will restart shortly: Statuscode " + res.status
+        this.alert = true
+        setTimeout(this.clearAlert, 3000);
+      })
+      .catch(error => {
+        this.status = "Something went wrong: " + error.response.status + "-" + error.response.data
         this.alert_type = "warning"
         this.alert = true
         setTimeout(this.clearAlert, 3000);

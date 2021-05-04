@@ -63,10 +63,28 @@ extern "C"
  */
 void data_nodes_init();
 
+/**
+ * Process incomming Thingset requests. Has CAN Address to match
+ * send function from TSDevice struct as it is used only internaly for,
+ * but could also be used by a UART/CAN task to process ThingSet requests in general
+ */
 char *process_ts_request(char *req, uint8_t CAN_Address);
 
 void uint64_to_base32(uint64_t in, char *out, size_t size);
 
+/**
+ * sets of a timer to reset the device, lets http request return gracefully before restarting
+ */
+void reset_device();
+
+/*
+ * Wrapper for saving nodes, used as callbacks. Always restarts the device after saving
+ */
+void save_mqtt();
+
+void save_emon();
+
+void save_general();
 
 /**
  * Reads config from Kconfig values
@@ -81,7 +99,7 @@ void config_nodes_load();
 /**
  * Writes config to NVS
  */
-void config_nodes_save();
+void config_nodes_save(const char *node);
 
 /**
  * Wrapper for serial query builder. Eliminates newline termination used for serial communication

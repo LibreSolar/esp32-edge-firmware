@@ -72,15 +72,15 @@ void app_main(void)
     }
 
 
-#if CONFIG_THINGSET_SERIAL
-    ts_serial_setup();
+    if (general_config.ts_serial_active) {
+        ts_serial_setup();
 
-    xTaskCreatePinnedToCore(ts_serial_rx_task, "ts_serial_rx", 4096,
-        NULL, RX_TASK_PRIO, NULL, 1);
-    ts_scan_devices();
-#endif
+        xTaskCreatePinnedToCore(ts_serial_rx_task, "ts_serial_rx", 4096,
+            NULL, RX_TASK_PRIO, NULL, 1);
+        ts_scan_devices();
+    }
 
-    if (strlen(CONFIG_WIFI_SSID) > 0) {
+    if (strlen(general_config.wifi_ssid) > 0) {
         wifi_connect();
     }
     else {
@@ -90,13 +90,13 @@ void app_main(void)
 
     start_web_server("/www");
 
-#if CONFIG_EMONCMS
-    xTaskCreate(&emoncms_post_task, "emoncms_post_task", 4096, NULL, 5, NULL);
-#endif
+    if (emon_config.active) {
+        xTaskCreate(&emoncms_post_task, "emoncms_post_task", 4096, NULL, 5, NULL);
+    }
 
-#if CONFIG_THINGSET_MQTT
-    xTaskCreate(&ts_mqtt_pub_task, "mqtt_pub", 4096, NULL, 5, NULL);
-#endif
+    if (mqtt_config.active) {
+        xTaskCreate(&ts_mqtt_pub_task, "mqtt_pub", 4096, NULL, 5, NULL);
+    }
 }
 
 #endif //unit tests

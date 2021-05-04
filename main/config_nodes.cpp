@@ -13,7 +13,7 @@
 #include "nvs.h"
 #include "esp_err.h"
 #include "string.h"
-
+#include "esp_timer.h"
 // assumption that config data is smaller than 1024 bytes
 #define BUFFER_SIZE 1024;
 
@@ -35,9 +35,9 @@ static DataNode data_nodes[] = {
     TS_NODE_STRING(0x1A, "Manufacturer", manufacturer, sizeof(manufacturer),
         ID_INFO, TS_ANY_R | TS_MKR_W, 0),
 
-    TS_NODE_PATH(ID_CONF, CONFIG_NODE_NAME, 0, &config_nodes_save),
+    TS_NODE_PATH(ID_CONF, CONFIG_NODE_NAME, 0, NULL),
 
-    TS_NODE_PATH(ID_CONF_GENERAL, CONFIG_NODE_GENERAL, ID_CONF, NULL),
+    TS_NODE_PATH(ID_CONF_GENERAL, CONFIG_NODE_GENERAL, ID_CONF, &save_general),
 
     TS_NODE_STRING(0x32, "WifiSSID", general_config.wifi_ssid, STRING_LEN,
         ID_CONF_GENERAL, TS_ANY_R | TS_ANY_W, PUB_NVM),
@@ -54,7 +54,7 @@ static DataNode data_nodes[] = {
     TS_NODE_BOOL(0x36, "TsUseSerial", &(general_config.ts_serial_active),
         ID_CONF_GENERAL, TS_ANY_R | TS_ANY_W, PUB_NVM),
 
-    TS_NODE_PATH(ID_CONF_EMONCMS, CONFIG_NODE_EMONCMS, ID_CONF, NULL),
+    TS_NODE_PATH(ID_CONF_EMONCMS, CONFIG_NODE_EMONCMS, ID_CONF, &save_emon),
 
     TS_NODE_BOOL(0x38, "Activate", &(emon_config.active),
         ID_CONF_EMONCMS, TS_ANY_R | TS_ANY_W, PUB_NVM),
@@ -80,7 +80,7 @@ static DataNode data_nodes[] = {
     TS_NODE_STRING(0x3F, "Port", emon_config.port, STRING_LEN,
         ID_CONF_EMONCMS, TS_ANY_R | TS_ANY_W, PUB_NVM),
 
-    TS_NODE_PATH(ID_CONF_MQTT, CONFIG_NODE_MQTT, ID_CONF, NULL),
+    TS_NODE_PATH(ID_CONF_MQTT, CONFIG_NODE_MQTT, ID_CONF, &save_mqtt),
 
     TS_NODE_BOOL(0x41, "Activate", &(mqtt_config.active),
         ID_CONF_MQTT, TS_ANY_R | TS_ANY_W, PUB_NVM),
@@ -101,7 +101,11 @@ static DataNode data_nodes[] = {
         ID_CONF_MQTT, TS_ANY_R | TS_ANY_W, PUB_NVM),
 
     TS_NODE_UINT32(0x47, "PubInterval", &(mqtt_config.pub_interval),
-        ID_CONF_MQTT, TS_ANY_R | TS_ANY_W, PUB_NVM)
+        ID_CONF_MQTT, TS_ANY_R | TS_ANY_W, PUB_NVM),
+
+    TS_NODE_PATH(ID_EXEC, "exec", 0, NULL),
+
+    TS_NODE_EXEC(0xE1, "reset", &reset_device, ID_EXEC, TS_ANY_RW),
 };
 
 ThingSet ts(data_nodes, sizeof(data_nodes)/sizeof(DataNode));
@@ -139,7 +143,9 @@ void data_nodes_init()
     if (it == NULL) {
         // Never written a blob to NVS after last flash erase
         config_nodes_load_kconfig();
-        config_nodes_save();
+        save_mqtt();
+        save_general();
+        save_emon();
     } else {
         config_nodes_load();
     }
@@ -171,7 +177,7 @@ TSResponse *process_local_request(char *req, uint8_t CAN_Address)
     if (req[strlen(req) - 1] == '\n') {
         req[strlen(req) - 1] = '\0';
     }
-    TSResponse *res = (TSResponse *) malloc(sizeof(TSResponse));
+    TSResponse *res = reinterpret_cast<TSResponse*>(malloc(sizeof(TSResponse)));
 
     res->block = process_ts_request(req, 0);
     res->data = ts_resp_data(res->block);
@@ -188,7 +194,6 @@ TSResponse *process_local_request(char *req, uint8_t CAN_Address)
 void config_nodes_load()
 {
     nvs_handle_t handle;
-    uint8_t *buf;
     size_t len = 0;
     esp_err_t ret = nvs_open_from_partition(PARTITION, NAMESPACE, NVS_READWRITE, &handle);
     if (ret != ESP_OK) {
@@ -197,10 +202,9 @@ void config_nodes_load()
     }
     for (const char **node = nodes; *node != NULL; node++) {
         nvs_get_blob(handle, *node, NULL, &len);
-        buf = (uint8_t *) malloc(len + 1);
+        uint8_t *buf = (uint8_t *) malloc(len + 1);
         if (buf == NULL) {
             ESP_LOGE(TAG, "Unable to allocate buffer for config");
-            ret = ESP_FAIL;
             break;
         }
         nvs_get_blob(handle, *node, buf, &len);
@@ -217,33 +221,60 @@ void config_nodes_load()
         free(ts_request);
     }
 }
+static void reset_cb(void* arg)
+{
+    esp_restart();
+}
+void reset_device()
+{
+    const esp_timer_create_args_t reset_timer_args = {
+            .callback = &reset_cb,
+            .arg = NULL,
+            .dispatch_method = ESP_TIMER_TASK,
+            .name = "one-shot"
+    };
+    esp_timer_handle_t reset_timer;
+    ESP_ERROR_CHECK(esp_timer_create(&reset_timer_args, &reset_timer));
+    ESP_ERROR_CHECK(esp_timer_start_once(reset_timer, 2*1000000));
+}
 
-void config_nodes_save()
+void save_general()
+{
+    config_nodes_save(CONFIG_NODE_GENERAL);
+}
+
+void save_mqtt()
+{
+    config_nodes_save(CONFIG_NODE_MQTT);
+}
+
+void save_emon()
+{
+    config_nodes_save(CONFIG_NODE_EMONCMS);
+}
+
+void config_nodes_save(const char *node)
 {
     size_t res_len = BUFFER_SIZE;
     char response[res_len];
-    int len;
     nvs_handle_t handle;
     esp_err_t ret = nvs_open_from_partition(PARTITION, NAMESPACE, NVS_READWRITE, &handle);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Unable to open nvs from partition");
         return;
     }
-    for (const char **ptr = nodes; *ptr != NULL; ptr++) {
-        char *ts_request = build_query(TS_GET, (char *) *ptr, NULL);
-        len = ts.process((uint8_t *) ts_request, strlen(ts_request), (uint8_t *) response, res_len);
-        ESP_LOGD(TAG, "Got response to query: %s", response);
-        char *json_start = ts_resp_data(response);
-        len = len - (json_start - response);
-        ret = nvs_set_blob(handle, *ptr, json_start, len);
-        if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Unable to write to NVS, Error: %d", ret);
-            break;
-        } else {
-            nvs_commit(handle);
-        }
-        free(ts_request);
+    char *ts_request = build_query(TS_GET, (char*) node, NULL);
+    int len = ts.process((uint8_t *) ts_request, strlen(ts_request), (uint8_t *) response, res_len);
+    ESP_LOGD(TAG, "Got response to query: %s", response);
+    char *json_start = ts_resp_data(response);
+    len = len - (json_start - response);
+    ret = nvs_set_blob(handle, node, json_start, len);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Unable to write to NVS, Error: %d", ret);
+    } else {
+        nvs_commit(handle);
     }
+    free(ts_request);
     nvs_close(handle);
 }
 
