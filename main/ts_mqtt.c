@@ -62,7 +62,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
     esp_mqtt_event_handle_t event = event_data;
     esp_mqtt_client_handle_t client = event->client;
-    int msg_id;
+    //int msg_id;
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
@@ -118,6 +118,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 void ts_mqtt_pub_task(void *arg)
 {
     TSDevice ts_device;
+    ts_device.ts_device_id = NULL;
     bool device_found = false;
     esp_err_t err;
 
@@ -165,7 +166,7 @@ void ts_mqtt_pub_task(void *arg)
         }
 
         int data_len = strlen(pub_msg) - 2;
-        if (pub_msg != NULL && data_len > 0) {
+        if (data_len > 0) {
             gpio_set_level(CONFIG_GPIO_LED, 0);
             send_data(client, ts_device.ts_device_id, pub_msg + 2, data_len);
             printf("Received: %s\n", pub_msg);
