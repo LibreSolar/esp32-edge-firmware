@@ -17,7 +17,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "cJSON.h"
-#include "config_nodes.h"
+#include "data_nodes.h"
 
 static const char *TAG = "ts_client";
 

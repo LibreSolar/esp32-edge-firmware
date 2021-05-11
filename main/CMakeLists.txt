@@ -19,7 +19,7 @@ set(app_sources
 	"../lib/thingset/src/thingset_txt.cpp"
 	"../lib/thingset/src/cbor.c"
 	"../lib/thingset/src/jsmn.c"
-	"config_nodes.cpp"
+	"data_nodes.cpp"
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS ".")

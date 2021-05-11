@@ -21,7 +21,7 @@
 
 #include <wifi_provisioning/scheme_ble.h>
 #include "provisioning.h"
-#include "config_nodes.h"
+#include "data_nodes.h"
 
 extern GeneralConfig general_config;
 

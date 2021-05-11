@@ -107,7 +107,6 @@ menu "User Configuration"
 
     config EMONCMS_NODE_SERIAL
         string "Node name of ThingSet device connected to serial"
-        depends on EMONCMS
         default "serial"
 
     config EMONCMS_NODE_MPPT

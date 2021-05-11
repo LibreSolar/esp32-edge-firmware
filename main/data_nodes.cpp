@@ -5,7 +5,7 @@
  */
 
 #ifndef UNIT_TEST
-#include "config_nodes.h"
+#include "data_nodes.h"
 #include "esp_system.h"
 #include "esp_log.h"
 #include "../lib/thingset/src/thingset.h"
@@ -35,9 +35,9 @@ static DataNode data_nodes[] = {
     TS_NODE_STRING(0x1A, "Manufacturer", manufacturer, sizeof(manufacturer),
         ID_INFO, TS_ANY_R | TS_MKR_W, 0),
 
-    TS_NODE_PATH(ID_CONF, CONFIG_NODE_NAME, 0, NULL),
+    TS_NODE_PATH(ID_CONF, DATA_NODE_CONF, 0, NULL),
 
-    TS_NODE_PATH(ID_CONF_GENERAL, CONFIG_NODE_GENERAL, ID_CONF, &save_general),
+    TS_NODE_PATH(ID_CONF_GENERAL, DATA_NODE_GENERAL, ID_CONF, &save_general),
 
     TS_NODE_STRING(0x32, "WifiSSID", general_config.wifi_ssid, STRING_LEN,
         ID_CONF_GENERAL, TS_ANY_R | TS_ANY_W, PUB_NVM),
@@ -54,7 +54,7 @@ static DataNode data_nodes[] = {
     TS_NODE_BOOL(0x36, "TsUseSerial", &(general_config.ts_serial_active),
         ID_CONF_GENERAL, TS_ANY_R | TS_ANY_W, PUB_NVM),
 
-    TS_NODE_PATH(ID_CONF_EMONCMS, CONFIG_NODE_EMONCMS, ID_CONF, &save_emon),
+    TS_NODE_PATH(ID_CONF_EMONCMS, DATA_NODE_EMONCMS, ID_CONF, &save_emon),
 
     TS_NODE_BOOL(0x38, "Activate", &(emon_config.active),
         ID_CONF_EMONCMS, TS_ANY_R | TS_ANY_W, PUB_NVM),
@@ -80,7 +80,7 @@ static DataNode data_nodes[] = {
     TS_NODE_STRING(0x3F, "Port", emon_config.port, STRING_LEN,
         ID_CONF_EMONCMS, TS_ANY_R | TS_ANY_W, PUB_NVM),
 
-    TS_NODE_PATH(ID_CONF_MQTT, CONFIG_NODE_MQTT, ID_CONF, &save_mqtt),
+    TS_NODE_PATH(ID_CONF_MQTT, DATA_NODE_MQTT, ID_CONF, &save_mqtt),
 
     TS_NODE_BOOL(0x41, "Activate", &(mqtt_config.active),
         ID_CONF_MQTT, TS_ANY_R | TS_ANY_W, PUB_NVM),
@@ -113,7 +113,7 @@ ThingSet ts(data_nodes, sizeof(data_nodes)/sizeof(DataNode));
 /*
 * String array to loop over
 */
-const char *nodes[] = {CONFIG_NODE_GENERAL, CONFIG_NODE_EMONCMS, CONFIG_NODE_MQTT, NULL};
+const char *nodes[] = {DATA_NODE_GENERAL, DATA_NODE_EMONCMS, DATA_NODE_MQTT, NULL};
 
 void data_nodes_init()
 {
@@ -121,7 +121,7 @@ void data_nodes_init()
     // MAC Address of WiFi Station equals base adress
     esp_read_mac(((uint8_t *) &id64) + 2, ESP_MAC_WIFI_STA);
     id64 &= ~((uint64_t) 0xFFFFFFFF << 32);
-    id64 += ((uint64_t)CONFIG_LIBRE_SOLAR_TYPE_ID) << 32;
+    id64 += ((uint64_t)LIBRE_SOLAR_TYPE_ID) << 32;
     uint64_to_base32(id64, device_id, sizeof(device_id));
 
     esp_err_t ret = nvs_flash_init_partition(PARTITION);
@@ -240,17 +240,17 @@ void reset_device()
 
 void save_general()
 {
-    config_nodes_save(CONFIG_NODE_GENERAL);
+    config_nodes_save(DATA_NODE_GENERAL);
 }
 
 void save_mqtt()
 {
-    config_nodes_save(CONFIG_NODE_MQTT);
+    config_nodes_save(DATA_NODE_MQTT);
 }
 
 void save_emon()
 {
-    config_nodes_save(CONFIG_NODE_EMONCMS);
+    config_nodes_save(DATA_NODE_EMONCMS);
 }
 
 void config_nodes_save(const char *node)

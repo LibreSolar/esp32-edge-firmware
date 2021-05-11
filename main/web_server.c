@@ -17,7 +17,7 @@
 
 #include "ts_serial.h"
 #include "ts_client.h"
-#include "config_nodes.h"
+#include "data_nodes.h"
 
 //just temporary until we implemented a way to select the chip
 #include "stm32bl.h"

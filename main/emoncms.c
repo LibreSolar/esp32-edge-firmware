@@ -32,7 +32,7 @@
 #include "ts_serial.h"
 #include "can.h"
 #include "wifi.h"
-#include "config_nodes.h"
+#include "data_nodes.h"
 
 static const char* TAG = "emoncms";
 

@@ -33,7 +33,7 @@
 #include "ts_client.h"
 #include "can.h"
 #include "wifi.h"
-#include "config_nodes.h"
+#include "data_nodes.h"
 
 MqttConfig mqtt_config;
 

@@ -38,7 +38,7 @@
 #include "web_fs.h"
 #include "web_server.h"
 #include "provisioning.h"
-#include "config_nodes.h"
+#include "data_nodes.h"
 
 #define RX_TASK_PRIO    9       // receiving task priority
 extern EmoncmsConfig emon_config;

@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef CONFIG_NODES_H_
-#define CONFIG_NODES_H_
+#ifndef DATA_NODES_H_
+#define DATA_NODES_H_
 
 #ifdef __cplusplus
 extern "C"
@@ -17,7 +17,7 @@ extern "C"
 #include "ts_client.h"
 
 
-#define CONFIG_LIBRE_SOLAR_TYPE_ID 9
+#define LIBRE_SOLAR_TYPE_ID 9
 
 /*
  * Partition name
@@ -46,10 +46,10 @@ extern "C"
 #define ID_LOG      0x100       // access log data
 
 #define STRING_LEN 128          // size of allocated strings in config
-#define CONFIG_NODE_NAME        "conf"
-#define CONFIG_NODE_GENERAL     "general"
-#define CONFIG_NODE_EMONCMS     "emoncms"
-#define CONFIG_NODE_MQTT        "mqtt"
+#define DATA_NODE_CONF        "conf"
+#define DATA_NODE_GENERAL     "general"
+#define DATA_NODE_EMONCMS     "emoncms"
+#define DATA_NODE_MQTT        "mqtt"
 
 /*
  * Publish/subscribe channels
