@@ -14,9 +14,18 @@ set(app_sources
 	"provisioning.c"
 	"../lib/isotp/isotp.c"
 	"isotp_user.c"
+	"../lib/thingset/src/thingset.cpp"
+	"../lib/thingset/src/thingset_bin.cpp"
+	"../lib/thingset/src/thingset_txt.cpp"
+	"../lib/thingset/src/cbor.c"
+	"../lib/thingset/src/jsmn.c"
+	"data_nodes.cpp"
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS ".")
+
+# MQTT broker certificate (e.g. https://letsencrypt.org/certs/trustid-x3-root.pem)
+target_add_binary_data(${COMPONENT_TARGET} "mqtt_root.pem" TEXT)
 
 # Create a SPIFFS image from the contents of the 'webapp' directory
 # that fits the partition named 'storage'. FLASH_IN_PROJECT indicates that

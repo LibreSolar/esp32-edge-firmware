@@ -10,6 +10,8 @@ export default new Vuex.Store({
     chartData: {},
     chartDataKeys: [],
     loading: true,
+    self: {},
+    selfInfo: null,
     devices: {},
     activeDevice: "No Devices connected..",
     activeDeviceId: "",
@@ -22,10 +24,15 @@ export default new Vuex.Store({
       state.activeDeviceId = state.devices[key]
     },
     saveDevices(state, devices) {
-      state.devices = devices
-      state.activeDevice = Object.keys(devices)[0]
-      state.activeDeviceId = Object.values(devices)[0]
-      state.loading = false
+      state.self = devices['self']
+      delete devices['self']
+      if (Object.keys(devices).length > 0) {
+        state.devices = devices
+        state.activeDevice = Object.keys(devices)[0]
+        state.activeDeviceId = Object.values(devices)[0]
+        state.loading = false
+      }
+      this.dispatch('getInfoSelf')
     },
     initChartData(state, newData) {
       const keys = Object.keys(newData)
@@ -43,6 +50,9 @@ export default new Vuex.Store({
     },
     saveAuthStatus(state, status) {
       state.isAuthenticated = status;
+    },
+    saveInfo(state, data) {
+      state.selfInfo = data
     }
   },
   actions: {
@@ -64,10 +74,12 @@ export default new Vuex.Store({
           if (res.data) {
             commit('saveDevices', res.data)
         }
+      }).catch(error => {
+        console.log(error);
       })
     },
     initChartData( { commit }) {
-      return axios.get("api/v1/ts/"+ this.state.activeDeviceId +"/output")
+      return axios.get("api/v1/ts/" + this.state.activeDeviceId + "/output")
         .then(res => {
           commit("initChartData", res.data);
         })
@@ -76,13 +88,21 @@ export default new Vuex.Store({
         })
     },
     updateChartData({ commit }) {
-      return axios.get("api/v1/ts/"+ this.state.activeDeviceId +"/output")
+      return axios.get("api/v1/ts/" + this.state.activeDeviceId + "/output")
         .then(res => {
           commit("updateChartData", res.data);
         })
         .catch(error => {
           console.log(error);
         });
+    },
+    getInfoSelf({ commit }) {
+      return axios.get("api/v1/ts/" + this.state.self + "/info")
+        .then(res => {
+          commit("saveInfo", res.data);
+        }).catch(error => {
+          console.log(error);
+        })
     }
   }
 })

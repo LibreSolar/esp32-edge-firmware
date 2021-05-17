@@ -7,6 +7,10 @@
 #ifndef TS_CLIENT_H_
 #define TS_CLIENT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <string.h>
 #include <stdint.h>
 
@@ -119,4 +123,7 @@ int ts_req_hdr_from_http(char *buf, size_t buf_size, int method, const char *uri
 void ts_parse_uri(const char *uri, TSUriElems *params);
 char *ts_build_query(uint8_t ts_method, TSUriElems *params);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* TS_CLIENT_H_ */

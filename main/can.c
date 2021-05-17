@@ -31,7 +31,6 @@ static const char *TAG = "can";
 bool update_bms_received = false;
 bool update_mppt_received = false;
 
-#if CONFIG_THINGSET_CAN
 
 #define ISOTP_BUFSIZE 512
 
@@ -303,17 +302,4 @@ void isotp_task(void *arg)
     }
 }
 
-#else /* not CONFIG_THINGSET_CAN */
-
-char *get_mppt_json_data()
-{
-    return "{}";
-}
-
-char *get_bms_json_data()
-{
-    return "{}";
-}
-
-#endif
 #endif // UNIT_TEST

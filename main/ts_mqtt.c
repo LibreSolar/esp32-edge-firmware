@@ -33,8 +33,9 @@
 #include "ts_client.h"
 #include "can.h"
 #include "wifi.h"
+#include "data_nodes.h"
 
-#if CONFIG_THINGSET_MQTT
+MqttConfig mqtt_config;
 
 static const char* TAG = "ts_mqtt";
 
@@ -46,8 +47,8 @@ extern const uint8_t mqtt_root_pem_start[]  asm("_binary_mqtt_root_pem_start");
 
 static void send_data(esp_mqtt_client_handle_t client, char *device_id, char *data, int size)
 {
-    char mqtt_topic[50];
-    snprintf(mqtt_topic, sizeof(mqtt_topic), "dat/%s/%s", CONFIG_THINGSET_MQTT_USER, device_id);
+    char mqtt_topic[256];
+    snprintf(mqtt_topic, sizeof(mqtt_topic), "dat/%s/%s", mqtt_config.username, device_id);
     int msg_id = esp_mqtt_client_publish(client, mqtt_topic, data, size, 0, 0);
     ESP_LOGI(TAG, "message sent to %s with msg_id=%d", mqtt_topic, msg_id);
 }
@@ -61,7 +62,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
     esp_mqtt_event_handle_t event = event_data;
     esp_mqtt_client_handle_t client = event->client;
-    int msg_id;
+    //int msg_id;
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
@@ -117,19 +118,20 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 void ts_mqtt_pub_task(void *arg)
 {
     TSDevice ts_device;
+    ts_device.ts_device_id = NULL;
     bool device_found = false;
     esp_err_t err;
 
-    const esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = CONFIG_THINGSET_MQTT_BROKER_URI,
+    esp_mqtt_client_config_t mqtt_cfg = {
+        .uri = mqtt_config.broker_hostname,
 #if CONFIG_THINGSET_MQTT_TLS
         .cert_pem = (const char *)mqtt_root_pem_start,
 #endif
-#if CONFIG_THINGSET_MQTT_AUTHENTICATION
-        .username = CONFIG_THINGSET_MQTT_USER,
-        .password = CONFIG_THINGSET_MQTT_PASS,
-#endif
-    };
+        };
+        if (mqtt_config.use_broker_auth) {
+            mqtt_cfg.username = mqtt_config.username;
+            mqtt_cfg.password = mqtt_config.password;
+        }
 
     // wait 3s for device to boot
     vTaskDelay(3000 / portTICK_PERIOD_MS);
@@ -164,7 +166,7 @@ void ts_mqtt_pub_task(void *arg)
         }
 
         int data_len = strlen(pub_msg) - 2;
-        if (pub_msg != NULL && data_len > 0) {
+        if (data_len > 0) {
             gpio_set_level(CONFIG_GPIO_LED, 0);
             send_data(client, ts_device.ts_device_id, pub_msg + 2, data_len);
             printf("Received: %s\n", pub_msg);
@@ -175,10 +177,8 @@ void ts_mqtt_pub_task(void *arg)
         gpio_set_level(CONFIG_GPIO_LED, 1);
 
         vTaskDelayUntil(&mqtt_pub_ticks,
-            CONFIG_THINGSET_MQTT_PUBLISH_INTERVAL * 1000 / portTICK_PERIOD_MS);
+            mqtt_config.pub_interval * 1000 / portTICK_PERIOD_MS);
     }
 }
-
-#endif /* CONFIG_THINGSET_MQTT */
 
 #endif /* UNIT_TEST */

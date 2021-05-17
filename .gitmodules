@@ -1,3 +1,6 @@
 [submodule "lib/isotp"]
 	path = lib/isotp
 	url = https://github.com/LibreSolar/isotp-c
+[submodule "lib/thingset"]
+	path = lib/thingset
+	url = https://github.com/LibreSolar/thingset-device-library.git

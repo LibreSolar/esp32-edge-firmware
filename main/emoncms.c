@@ -32,24 +32,31 @@
 #include "ts_serial.h"
 #include "can.h"
 #include "wifi.h"
-
-#if CONFIG_EMONCMS
+#include "data_nodes.h"
 
 static const char* TAG = "emoncms";
+
+extern EmoncmsConfig emon_config;
+
+char http_header[1024];
+
+void build_header()
+{
+    snprintf(http_header, sizeof(http_header),
+        "POST %s HTTP/1.1\r\n"
+        "Host: %s\r\n"
+        "Authorization: %s\r\n"
+        "User-Agent: esp-idf/1.0 esp32\r\n"
+        "Content-Type: application/x-www-form-urlencoded\r\n"
+        "Connection: close\r\n", emon_config.url, emon_config.emoncms_hostname, emon_config.api_key);
+        ESP_LOGD(TAG, "Header (%d bytes): \n%s", strlen(http_header), http_header);
+}
 
 static int send_emoncms(struct addrinfo *res, const char *node_name, const char *json_str)
 {
     static char buf[500];
     static char http_body[600];
     char recv_buf[64];
-
-    const char *http_header =
-        "POST " CONFIG_EMONCMS_URL " HTTP/1.1\r\n"
-        "Host: " CONFIG_EMONCMS_HOST "\r\n"
-        "Authorization: " CONFIG_EMONCMS_APIKEY "\r\n"
-        "User-Agent: esp-idf/1.0 esp32\r\n"
-        "Content-Type: application/x-www-form-urlencoded\r\n"
-        "Connection: close\r\n";
 
     snprintf(http_body, sizeof(http_body), "node=%s&json=%s", node_name, json_str);
     printf("HTTP body for %s: %s\n", node_name, http_body);
@@ -99,6 +106,7 @@ static int send_emoncms(struct addrinfo *res, const char *node_name, const char 
 
 void emoncms_post_task(void *arg)
 {
+    build_header();
     const struct addrinfo hints = {
         .ai_family = AF_INET,
         .ai_socktype = SOCK_STREAM,
@@ -125,7 +133,7 @@ void emoncms_post_task(void *arg)
         //esp_netif_ip_info_t ip_info;
         //err = esp_netif_get_ip_info(wifi_get_netif, &ip_info);
 
-        err = getaddrinfo(CONFIG_EMONCMS_HOST, CONFIG_EMONCMS_PORT, &hints, &res);
+        err = getaddrinfo(emon_config.emoncms_hostname, emon_config.port, &hints, &res);
 
         if (err != 0 || res == NULL) {
             ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
@@ -140,7 +148,7 @@ void emoncms_post_task(void *arg)
 
         if (update_bms_received) {
             gpio_set_level(CONFIG_GPIO_LED, 0);
-            send_emoncms(res, CONFIG_EMONCMS_NODE_BMS, get_bms_json_data());
+            send_emoncms(res, emon_config.bms, get_bms_json_data());
             update_bms_received = false;
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
@@ -150,7 +158,7 @@ void emoncms_post_task(void *arg)
 
         if (update_mppt_received) {
             gpio_set_level(CONFIG_GPIO_LED, 0);
-            send_emoncms(res, CONFIG_EMONCMS_NODE_MPPT, get_mppt_json_data());
+            send_emoncms(res, emon_config.mppt, get_mppt_json_data());
             update_mppt_received = false;
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
@@ -160,7 +168,7 @@ void emoncms_post_task(void *arg)
 
         if (pub_msg != NULL && strlen(pub_msg) > 2) {
             gpio_set_level(CONFIG_GPIO_LED, 0);
-            send_emoncms(res, CONFIG_EMONCMS_NODE_SERIAL, pub_msg + 2);
+            send_emoncms(res, emon_config.serial_node, pub_msg + 2);
             ts_serial_pubmsg_clear();
             vTaskDelay(100 / portTICK_PERIOD_MS);
         }
@@ -173,5 +181,4 @@ void emoncms_post_task(void *arg)
     }
 }
 
-#endif // CONFIG_EMONCMS
 #endif // UNIT_TEST

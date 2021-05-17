@@ -21,11 +21,17 @@
 
 #include <wifi_provisioning/scheme_ble.h>
 #include "provisioning.h"
+#include "data_nodes.h"
+
+extern GeneralConfig general_config;
 
 static const char *TAG = "prov";
 
 const int WIFI_CONNECTED_EVENT = BIT0;
 static EventGroupHandle_t wifi_event_group;
+
+char temp_ssid[32];
+char temp_password[64];
 
 static void event_handler(void* arg, esp_event_base_t event_base,
                           int event_id, void* event_data)
@@ -42,6 +48,8 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                          "\n\tSSID     : %s\n\tPassword : %s",
                          (const char *) wifi_sta_cfg->ssid,
                          (const char *) wifi_sta_cfg->password);
+                memcpy(temp_ssid, wifi_sta_cfg->ssid, sizeof(temp_ssid));
+                memcpy(temp_password, wifi_sta_cfg->password, sizeof(temp_password));
                 break;
             }
             case WIFI_PROV_CRED_FAIL: {
@@ -54,6 +62,8 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             }
             case WIFI_PROV_CRED_SUCCESS:
                 ESP_LOGI(TAG, "Provisioning successful");
+                memcpy(general_config.wifi_ssid, temp_ssid, sizeof(temp_ssid));
+                memcpy(general_config.wifi_password, temp_password, sizeof(temp_password));
                 break;
             case WIFI_PROV_END:
                 /* De-initialize manager once provisioning is finished */
@@ -77,14 +87,14 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 
 static void initialise_mdns(void)
 {
-    char* hostname = CONFIG_DEVICE_HOSTNAME;
+    char* hostname = general_config.mdns_hostname;
     //initialize mDNS
     ESP_ERROR_CHECK( mdns_init() );
     //set mDNS hostname (required if you want to advertise services)
     ESP_ERROR_CHECK( mdns_hostname_set(hostname) );
     ESP_LOGI(TAG, "mdns hostname set to: [%s]", hostname);
     //set default mDNS instance name
-    ESP_ERROR_CHECK( mdns_instance_name_set(CONFIG_DEVICE_HOSTNAME) );
+    ESP_ERROR_CHECK( mdns_instance_name_set(general_config.mdns_hostname) );
 
     //structure with TXT records
     mdns_txt_item_t serviceTxtData[1] = {
