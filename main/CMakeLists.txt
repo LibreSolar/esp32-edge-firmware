@@ -24,6 +24,9 @@ set(app_sources
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS ".")
 
+# MQTT broker certificate (e.g. https://letsencrypt.org/certs/trustid-x3-root.pem)
+target_add_binary_data(${COMPONENT_TARGET} "mqtt_root.pem" TEXT)
+
 # Create a SPIFFS image from the contents of the 'webapp' directory
 # that fits the partition named 'storage'. FLASH_IN_PROJECT indicates that
 # the generated image should be flashed when the entire project is flashed to
