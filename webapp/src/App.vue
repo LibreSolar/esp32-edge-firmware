@@ -51,6 +51,14 @@
     </v-app-bar>
 
     <v-main class="accent">
+      <v-alert
+      v-model="showAlert"
+      dense
+      :type="$store.state.globAlertType"
+      transition="scale-transition"
+      dismissible
+      class="ma-4"
+      >{{ $store.state.globAlertMsg }}</v-alert>
         <router-view/>
     </v-main>
 
@@ -81,12 +89,20 @@
 </template>
 
 <script>
-
-
 export default {
   name: 'App',
   created() {
     this.$store.dispatch('getDevices')
+  },
+  computed: {
+    showAlert: {
+      get () {
+        return this.$store.state.globAlert
+      },
+      set () {
+        this.$store.commit('resetAlert')
+      }
+    }
   },
   data () {
     return {
@@ -104,7 +120,6 @@ export default {
         { title: 'Settings', href: '/esp-config', icon: 'mdi-cog'}
       ],
       right: null,
-      dialog: false
     }
   }
 };

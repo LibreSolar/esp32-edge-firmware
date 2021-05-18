@@ -29,14 +29,19 @@
                 v-model="alert"
                 dense
                 outlined
-                type="error"
+                :type="type"
                 transition="scale-transition"
                 dismissible
                 >{{ status }}</v-alert>
             </v-row>
             </v-col>
           </v-card-text>
-
+          <v-card-text class="text-center pa-4" v-else>
+            <v-progress-circular
+            indeterminate
+            color="primary"
+            ></v-progress-circular>
+          </v-card-text>
         </v-card>
       </v-flex>
     </v-layout>
@@ -45,13 +50,14 @@
 
 <script>
 export default {
-    data() {
-        return {
-            dataObjects: null,
-            prettyStrings: null,
-            loading: true,
-            status: "",
-            alert: false,
+  data() {
+    return {
+      dataObjects: null,
+      prettyStrings: {},
+      loading: true,
+      status: "",
+      type: "error",
+      alert: false,
     }
   },
   created() {
@@ -76,7 +82,6 @@ export default {
           this.alert = true
         })
     },
-
     changeValue: function(name) {
       let id =  this.$store.state.activeDeviceId
       let body = {}

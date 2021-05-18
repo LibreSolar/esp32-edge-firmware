@@ -17,6 +17,12 @@
               Firmware version: <span class="grey--text">{{ $store.state.info[$store.state.activeDeviceId].FirmwareVersion }}</span>
             </div>
           </v-card-title>
+          <v-card-text class="text-center pa-4" v-else>
+            <v-progress-circular
+            indeterminate
+            color="primary"
+            ></v-progress-circular>
+          </v-card-text>
           <v-card-text>
             <v-alert
             v-model="alert"
@@ -48,12 +54,7 @@ export default {
   },
   mounted() {
     if(!this.$store.state.info[this.$store.state.activeDeviceId]) {
-      this.$store.dispatch("getDeviceInfo").then(() => {
-        this.loading = false;
-        })
-        .catch(error => {
-        this.showError(error)
-      })
+      this.fetchData()
     } else {
       this.loading = false
     }
@@ -61,6 +62,7 @@ export default {
   methods: {
     fetchData: function() {
       this.$store.dispatch("getDeviceInfo").then(() => {
+        this.loading = false
         this.alert = false
       })
       .catch(error => {
