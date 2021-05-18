@@ -25,6 +25,12 @@
                 </v-col>
             </v-row>
           </v-card-text>
+          <v-card-text class="text-center pa-4" v-else>
+            <v-progress-circular
+            indeterminate
+            color="primary"
+            ></v-progress-circular>
+          </v-card-text>
           <v-container class="text-center pa-md-6">
             <v-btn color="primary" @click="sendValues">
               <v-icon left>mdi-checkbox-marked-circle</v-icon> Apply

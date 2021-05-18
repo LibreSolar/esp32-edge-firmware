@@ -17,14 +17,18 @@ export default new Vuex.Store({
     activeDeviceId: "",
     info: {},
     thingsetStrings: {},
-    isAuthenticated: false
+    isAuthenticated: false,
+    globAlert: false,
+    globAlertType: "warning",
+    globAlertMsg: ""
   },
   mutations: {
     changeDevice(state, key) {
       state.activeDevice = key
       state.activeDeviceId = state.devices[key]
-      this.dispatch("getDeviceInfo").then(() => {
-        this.dispatch("getThingsetStrings")
+      if(!state.info[key])
+        this.dispatch("getDeviceInfo").then(() => {
+          this.dispatch("getThingsetStrings")
       })
     },
     saveDevices(state, devices) {
@@ -62,6 +66,14 @@ export default new Vuex.Store({
     },
     saveInfo(state, data) {
       state.selfInfo = data
+    },
+    triggerAlert(state, msg) {
+        state.globAlert = true
+        state.globAlertMsg = msg
+        state.globAlertType = "warning"
+    },
+    resetAlert(state) {
+      state.globAlert = false
     }
   },
   actions: {
@@ -74,7 +86,7 @@ export default new Vuex.Store({
       })
       .catch(error => {
         commit('saveAuthStatus', false);
-        throw error;
+        console.log(error);
       })
     },
     getDevices( { commit }) {
@@ -100,15 +112,15 @@ export default new Vuex.Store({
       let deviceType = this.state.activeDevice.toLowerCase().split(" ")[0]
       let version = this.state.info[this.state.activeDeviceId].FirmwareVersion .split(".")[0]
       let base = "https://files.libre.solar/info/"
-      return axios.get(base + deviceType + "/" + version + "/info.json")
+      axios.get(base + deviceType + "/" + version + "/info.json")
       .then(res => {
         commit("saveThingsetStrings", res.data)
       })
       .catch(error => {
-        // we don't care if the pretty strings are not there since its just nice-to-have
-        return
+        commit("triggerAlert",
+              "Unable to load additional information for " + this.state.activeDevice)
       })
-  },
+    },
     initChartData( { commit }) {
       return axios.get("api/v1/ts/" + this.state.activeDeviceId + "/output")
         .then(res => {
@@ -135,7 +147,7 @@ export default new Vuex.Store({
           console.log(error);
         })
     },
-    createPrettyStrings({ commit }, section) {
+    async createPrettyStrings({ commit }, section) {
       let id = this.state.activeDeviceId
       if(this.state.thingsetStrings[id]) {
         return this.state.thingsetStrings[id][section]

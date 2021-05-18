@@ -57,6 +57,12 @@
       </v-flex>
     </v-layout>
   </v-container>
+  <div class="text-center pa-4" v-else>
+    <v-progress-circular
+    indeterminate
+    color="primary"
+    ></v-progress-circular>
+  </div>
 </template>
 
 <script>

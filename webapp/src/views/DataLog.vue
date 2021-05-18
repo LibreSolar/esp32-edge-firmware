@@ -39,6 +39,12 @@
                 </v-col>
             </v-row>
           </v-card-text>
+          <v-card-text class="text-center pa-4" v-else>
+            <v-progress-circular
+            indeterminate
+            color="primary"
+            ></v-progress-circular>
+          </v-card-text>
         </v-card>
         </v-flex>
         <v-dialog v-model="dialog" width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
