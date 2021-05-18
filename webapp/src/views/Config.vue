@@ -4,7 +4,7 @@
       <v-flex>
         <v-card class="mx-auto my-auto" max-width="1200">
           <v-card-title primary-title class="justify-center">Configuration</v-card-title>
-          <v-card-text>
+          <v-card-text v-if="!loading">
             <v-row justify="center" dense no-gutters>
                 <v-col
                   v-for="(value, name) in dataObjects"
@@ -15,9 +15,9 @@
                   lg="4"
                   class="px-1 ma-0">
                   <v-text-field
-                    :label="$store.state.info ? $store.state.info.conf[name].title.en : name"
+                    :label="prettyStrings[name] ? prettyStrings[name].title.en : name"
                     v-model="dataObjects[name]"
-                    :suffix="$store.state.info ? $store.state.info.conf[name].unit : (name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : '')"
+                    :suffix="prettyStrings[name] ? prettyStrings[name].unit : (name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : '')"
                     outlined
                     :dense="$vuetify.breakpoint.smAndDown"
                     class="pa-0 ma-0"
@@ -78,6 +78,8 @@ export default {
   data() {
     return {
       dataObjects: null,
+      prettyStrings: null,
+      loading: true,
       baseData: null,
       diff: {},
       dialog: false,
@@ -86,25 +88,30 @@ export default {
     }
   },
   created() {
-    this.fetchData()
+    this.fetchData().then(() => {
+      this.$store.dispatch('createPrettyStrings', 'conf').then((strings) => {
+        this.prettyStrings = strings
+        this.loading = false
+      })
+    })
   },
   methods: {
     fetchData: function() {
       let id = this.$store.state.activeDeviceId
-    this.$ajax
-      .get("api/v1/ts/" + id + "/conf")
-      .then(res => {
-        this.alert = false
-        this.dataObjects = res.data
-        // keep a copy so we can make a diff to reduce size,
-        // writing to eeprom in the MCU takes long...
-        // this only works with basic datatypes, not with Date() etc.
-        this.baseData = JSON.parse(JSON.stringify(res.data))
-      })
-      .catch(error => {
-        this.status = "Configuration Information could not be fetched: " + error.response.status + "-" + error.response.data
-        this.alert = true
-      })
+      return this.$ajax
+        .get("api/v1/ts/" + id + "/conf")
+        .then(res => {
+          this.alert = false
+          this.dataObjects = res.data
+          // keep a copy so we can make a diff to reduce size,
+          // writing to eeprom in the MCU takes long...
+          // this only works with basic datatypes, not with Date() etc.
+          this.baseData = JSON.parse(JSON.stringify(res.data))
+        })
+        .catch(error => {
+          this.status = "Configuration Information could not be fetched: " + error.response.status + "-" + error.response.data
+          this.alert = true
+        })
     },
     resetValues: function() {
       this.dataObjects = this.baseData
