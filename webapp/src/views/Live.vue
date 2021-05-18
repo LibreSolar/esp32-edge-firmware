@@ -154,11 +154,12 @@ export default {
     },
     //necessary to handle cases when info.json could not be loaded
     createSelection() {
+      let id = this.$store.state.activeDeviceId
       this.availableData = new Map()
       let key = ""
       this.$store.state.chartDataKeys.forEach((elem) => {
-        if(this.$store.state.info) {
-          key = this.$store.state.info.output[elem].title.en
+        if(this.$store.state.thingsetStrings[id]?.output[elem]) {
+          key = this.$store.state.thingsetStrings[id].output[elem].title.en
         } else {
           key = elem
         }

@@ -4,7 +4,7 @@
       <v-flex>
         <v-card class="mx-auto my-auto" max-width="300">
           <v-card-title primary-title class="justify-center">Input/Output</v-card-title>
-          <v-card-text>
+          <v-card-text v-if="!loading">
             <v-col  dense no-gutters>
                 <v-row
                 justify="center"
@@ -16,7 +16,7 @@
                 lg="6"
                 class="px-1 ma-0">
                 <v-checkbox
-                    :label="$store.state.info ? $store.state.info.input[name].title.en : name"
+                    :label="prettyStrings[name] ? prettyStrings[name].title.en : name"
                     v-model="dataObjects[name]"
                     @change="changeValue(name)"
                     outlined
@@ -48,26 +48,33 @@ export default {
     data() {
         return {
             dataObjects: null,
+            prettyStrings: null,
+            loading: true,
             status: "",
             alert: false,
     }
   },
   created() {
-    this.fetchData()
+    this.fetchData().then(() => {
+      this.$store.dispatch('createPrettyStrings', 'input').then((strings) => {
+        this.prettyStrings = strings
+        this.loading = false
+      })
+    })
   },
   methods: {
     fetchData: function() {
-        let id = this.$store.state.activeDeviceId
-        this.$ajax
-      .get("api/v1/ts/" + id + "/input")
-      .then(res => {
-        this.alert = false
-        this.dataObjects = res.data
-      })
-      .catch(error => {
-        this.status = "Information could not be fetched: " + error.response.status + "-" + error.response.data
-        this.alert = true
-      })
+      let id = this.$store.state.activeDeviceId
+      return this.$ajax
+        .get("api/v1/ts/" + id + "/input")
+        .then(res => {
+          this.alert = false
+          this.dataObjects = res.data
+        })
+        .catch(error => {
+          this.status = "Information could not be fetched: " + error.response.status + "-" + error.response.data
+          this.alert = true
+        })
     },
 
     changeValue: function(name) {

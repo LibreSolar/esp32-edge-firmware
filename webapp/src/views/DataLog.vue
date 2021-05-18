@@ -14,7 +14,7 @@
               transition="scale-transition">{{ status }}
             </v-alert>
           </v-card-text>
-          <v-card-text>
+          <v-card-text v-if="!loading">
             <v-row justify="center" dense no-gutters>
                 <v-col
                   v-for="(value, name) in data"
@@ -26,9 +26,9 @@
                   lg="3"
                   class="px-1 ma-0">
                   <v-text-field
-                    :label="$store.state.info ? $store.state.info.rec[name].title.en : name"
+                    :label="prettyStrings[name] ? prettyStrings[name].title.en : name"
                     v-model="data[name]"
-                    :suffix="$store.state.info ? $store.state.info.rec[name].unit : (name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : '')"
+                    :suffix="prettyStrings[name] ? prettyStrings[name].unit : (name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : '')"
                     outlined
                     readonly
                     append-icon="mdi-delete-outline"
@@ -75,6 +75,8 @@ export default {
   data() {
     return {
       data: null,
+      prettyStrings: null,
+      loading: true,
       status: "",
       alert: false,
       alertType: "warning",
@@ -83,12 +85,17 @@ export default {
     }
   },
   created() {
-    this.fetchData()
+    this.fetchData().then(() => {
+      this.$store.dispatch('createPrettyStrings', 'rec').then((strings) => {
+        this.prettyStrings = strings
+        this.loading = false
+      })
+    })
   },
   methods: {
     fetchData: function() {
       let id = this.$store.state.activeDeviceId
-      this.$ajax
+      return this.$ajax
         .get("api/v1/ts/" + id + "/rec")
         .then(res => {
           this.data = res.data
