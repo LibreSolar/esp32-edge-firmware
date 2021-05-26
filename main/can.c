@@ -52,7 +52,7 @@ uint32_t can_addr_server = 0x14;     // select MPPT or BMS
 // buffer for JSON string generated from received data objects via CAN
 static char json_buf[500];
 
-static const can_timing_config_t t_config = CAN_TIMING_CONFIG_250KBITS();
+static const can_timing_config_t t_config = CAN_TIMING_CONFIG_500KBITS();
 static const can_filter_config_t f_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
 static const can_general_config_t g_config =
     CAN_GENERAL_CONFIG_DEFAULT(CONFIG_GPIO_CAN_TX, CONFIG_GPIO_CAN_RX, CAN_MODE_NORMAL);
