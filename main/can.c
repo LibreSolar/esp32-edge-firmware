@@ -34,7 +34,6 @@ static const char *TAG = "can";
 bool update_bms_received = false;
 bool update_mppt_received = false;
 
-
 xQueueHandle receive_queue;
 #define RECV_QUEUE_SIZE 1
 #define ISOTP_BUFSIZE 512
@@ -240,7 +239,7 @@ void can_receive_task(void *arg)
     while (1) {
         ret = can_receive(&message, pdMS_TO_TICKS(10000));
         if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "Received Can Msg");
+            ESP_LOGD(TAG, "Received CAN Msg");
 
             /* checking for CAN ID used to receive ISO-TP frames */
             if (message.identifier == (can_addr_client << 8 | can_addr_server | 0x1ada << 16)) {
@@ -266,8 +265,9 @@ void can_receive_task(void *arg)
                         ESP_LOGE(TAG, "isotp_receive(): No Data Received");
                     }
                 }
-            } else {
-                // ThingSet publication message format: https://thingset.github.io/spec/can
+            }
+            else {
+                // ThingSet publication message format: https://libre.solar/thingset/
                 device_addr = message.identifier & 0x000000FF;
                 data_node_id = (message.identifier >> 8) & 0x0000FFFF;
 
@@ -291,17 +291,15 @@ void can_receive_task(void *arg)
                     }
                     update_mppt_received = true;
                 }
-                ESP_LOGI(TAG, "Received pub-msg on CAN");
-                if (!(message.flags & CAN_MSG_FLAG_RTR)) {
-                    for (int i = 0; i < message.data_length_code; i++) {
-                        ESP_LOGI(TAG, "Message is: %.8s", message.data);
-                    }
-                }
+                ESP_LOGI(TAG, "Received pub-msg on CAN:");
+                ESP_LOG_BUFFER_HEX_LEVEL(TAG, message.data, message.data_length_code, ESP_LOG_INFO);
             }
-        } else {
+        }
+        else {
             if (ret == ESP_ERR_TIMEOUT) {
                 ESP_LOGE(TAG, "Received timed out");
-            } else if (ret == ESP_ERR_INVALID_STATE) {
+            }
+            else if (ret == ESP_ERR_INVALID_STATE) {
                 ESP_LOGE(TAG, "Driver in invalid state");
             }
         }
@@ -319,10 +317,11 @@ char *ts_can_send(uint8_t *req, uint32_t query_size, uint8_t CAN_Address, uint32
     ESP_LOGI(TAG, "Sending out msg: %s with len: %d", req, query_size);
     int ret = isotp_send(&isotp_link, (uint8_t *)"?info", 5);
     if (ISOTP_RET_OK == ret) {
-            printf("ISOTP Send OK\n");
-        } else {
-            printf("ISOTP Send ERROR\n");
-        }
+        printf("ISOTP Send OK\n");
+    }
+    else {
+        printf("ISOTP Send ERROR\n");
+    }
     if (xQueueReceive(receive_queue, &msg, pdMS_TO_TICKS(500))) {
         *block_len = msg.len;
         return (char *) msg.data;
@@ -330,13 +329,15 @@ char *ts_can_send(uint8_t *req, uint32_t query_size, uint8_t CAN_Address, uint32
     return NULL;
 }
 
-int ts_can_scan_device_info(TSDevice *device){
+int ts_can_scan_device_info(TSDevice *device)
+{
     uint8_t query[] = "?info";
     uint32_t resp_len = 0;
     char * response = ts_can_send(query, strlen((char *) query), can_addr_server, &resp_len);
     if (response != NULL) {
         ESP_LOGI(TAG, "Got Response: %s", response);
-    } else {
+    }
+    else {
         ESP_LOGE(TAG, "No Response");
     }
     return 1;
