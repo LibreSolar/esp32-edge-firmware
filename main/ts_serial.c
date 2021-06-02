@@ -279,21 +279,17 @@ int ts_serial_scan_device_info(TSDevice *device)
 
     cJSON *json_data = cJSON_Parse(resp);
     ts_serial_response_clear();
-    size_t ts_string_len = strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceType")));
-    device->ts_name = (char *) heap_caps_malloc(ts_string_len+1, MALLOC_CAP_8BIT);
-    strcpy(device->ts_name, cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceType")));
-    ts_string_len = strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceID")));
-    device->ts_device_id = (char *) heap_caps_malloc(ts_string_len+1, MALLOC_CAP_8BIT);
-    strcpy(device->ts_device_id , cJSON_GetStringValue(cJSON_GetObjectItem(json_data, "DeviceID")));
-    // link send function
+
+    // link functions
     device->send = ts_serial_send;
     device->build_query = ts_build_query_serial;
     device->ts_resp_data = ts_serial_resp_data;
     device->ts_resp_status = ts_serial_resp_status;
     device->CAN_Address = UINT8_MAX;
-    ESP_LOGI(TAG, "Found device with ID: %s!", device->ts_device_id);
+    int ret = ts_parse_device_info(json_data, device);
     cJSON_Delete(json_data);
-    return 0;
+
+    return ret;
 }
 
 esp_err_t ts_serial_ota(int flash_size, int page_size)
