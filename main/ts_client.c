@@ -36,20 +36,18 @@ void ts_scan_devices()
     devices[0]->ts_resp_data = &ts_serial_resp_data;
     devices[0]->ts_resp_status = &ts_serial_resp_status;
 
-    devices[1] = (TSDevice *) malloc(sizeof(TSDevice));
+    devices[1] = (TSDevice *) calloc(1, sizeof(TSDevice));
     //scan serial connection
     if (ts_serial_scan_device_info(devices[1]) != 0) {
-        free(devices[1]);
-        devices[1] = NULL;
+        devices[1] = ts_remove_device(devices[1]);
     };
 
     //scan CAN connection
 
-    devices[2] = (TSDevice *) malloc(sizeof(TSDevice));
+    devices[2] = (TSDevice *) calloc(1, sizeof(TSDevice));
 
     if (ts_can_scan_device_info(devices[2]) != 0) {
-        free(devices[2]);
-        devices[2] = NULL;
+        devices[2] = ts_remove_device(devices[2]);
     }
 }
 
@@ -89,6 +87,42 @@ TSDevice *ts_get_device(char *device_id)
         }
         i++;
     }
+    return NULL;
+}
+
+int ts_parse_device_info(cJSON *json, TSDevice *device)
+{
+    size_t ts_string_len = strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json, "DeviceType")));
+    device->ts_name = (char *) malloc(ts_string_len+1);
+    if (device->ts_name == NULL) {
+        ESP_LOGE(TAG, "Unable to allocate memory for device name");
+        return -1;
+    }
+    strcpy(device->ts_name, cJSON_GetStringValue(cJSON_GetObjectItem(json, "DeviceType")));
+    ts_string_len = strlen(cJSON_GetStringValue(cJSON_GetObjectItem(json, "DeviceID")));
+    device->ts_device_id = (char *) malloc(ts_string_len+1);
+    if (device->ts_device_id == NULL) {
+        ESP_LOGE(TAG, "Unable to allocate memory for device id");
+        return -1;
+    }
+    strcpy(device->ts_device_id , cJSON_GetStringValue(cJSON_GetObjectItem(json, "DeviceID")));
+    ESP_LOGI(TAG, "Got device with ID: %s!", device->ts_device_id);
+
+    return 0;
+}
+
+void *ts_remove_device(TSDevice *device)
+{
+    if (device == NULL) {
+        return NULL;
+    }
+    if (device->ts_name != NULL) {
+        free(device->ts_name);
+    }
+    if (device->ts_device_id != NULL) {
+        free(device->ts_device_id);
+    }
+    free(device);
     return NULL;
 }
 

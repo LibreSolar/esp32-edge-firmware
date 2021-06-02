@@ -29,6 +29,7 @@
 
 #include "ts_client.h"
 #include "ts_cbor.h"
+#include "cJSON.h"
 static const char *TAG = "can";
 
 bool update_bms_received = false;
@@ -332,15 +333,19 @@ char *ts_can_send(uint8_t *req, uint32_t query_size, uint8_t CAN_Address, uint32
 int ts_can_scan_device_info(TSDevice *device)
 {
     uint8_t query[] = "?info";
-    uint32_t resp_len = 0;
-    char * response = ts_can_send(query, strlen((char *) query), can_addr_server, &resp_len);
-    if (response != NULL) {
-        ESP_LOGI(TAG, "Got Response: %s", response);
+    TSResponse res;
+    res.block = ts_can_send(query, strlen((char *) query), can_addr_server, &(res.block_len));
+    if (res.block != NULL) {
+        ESP_LOGI(TAG, "Got Response: %s", res.block);
+        res.data = ts_serial_resp_data(&res);
+
+        cJSON *json_data = cJSON_Parse(res.data);
+        return ts_parse_device_info(json_data, device);
     }
     else {
         ESP_LOGE(TAG, "No Response");
+        return -1;
     }
-    return 1;
 }
 
 #endif // UNIT_TEST
