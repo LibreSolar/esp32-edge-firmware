@@ -26,6 +26,8 @@ extern char device_id[9];
 
 void ts_scan_devices()
 {
+    int num = 1;
+
     // Add self to devices
     devices[0] = (TSDevice *) malloc(sizeof(TSDevice));
     devices[0]->ts_device_id = device_id;
@@ -36,18 +38,19 @@ void ts_scan_devices()
     devices[0]->ts_resp_data = &ts_serial_resp_data;
     devices[0]->ts_resp_status = &ts_serial_resp_status;
 
-    devices[1] = (TSDevice *) calloc(1, sizeof(TSDevice));
     //scan serial connection
-    if (ts_serial_scan_device_info(devices[1]) != 0) {
-        devices[1] = ts_remove_device(devices[1]);
-    };
+    devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
+    if (ts_serial_scan_device_info(devices[num]) != 0) {
+        devices[num] = ts_remove_device(devices[num]);
+    }
+    else {
+        num++;
+    }
 
     //scan CAN connection
-
-    devices[2] = (TSDevice *) calloc(1, sizeof(TSDevice));
-
-    if (ts_can_scan_device_info(devices[2]) != 0) {
-        devices[2] = ts_remove_device(devices[2]);
+    devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
+    if (ts_can_scan_device_info(devices[num]) != 0) {
+        devices[num] = ts_remove_device(devices[num]);
     }
 }
 
