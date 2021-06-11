@@ -85,8 +85,8 @@ typedef struct {
     char *ts_device_id;
     char *ts_name;
     //function pointer to send requests to device, abstracting underlying connection
-    char *(*send)(char *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len);
-    char *(*build_query)(uint8_t ts_method, TSUriElems *params, uint32_t* query_size);
+    char *(*send)(void *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len);
+    void *(*build_query)(uint8_t ts_method, TSUriElems *params, uint32_t* query_size);
     char *(*ts_resp_data)(TSResponse *res);
     uint8_t (*ts_resp_status)(TSResponse *res);
 } TSDevice;
@@ -143,7 +143,7 @@ void ts_parse_uri(const char *uri, TSUriElems *params);
  * \returns String with the query
  * Caller is responsible to free() string
  */
-char *ts_build_query_serial(uint8_t ts_method, TSUriElems *params, uint32_t *query_size);
+void *ts_build_query_serial(uint8_t ts_method, TSUriElems *params, uint32_t *query_size);
 
 /**
  * Takes device Information as a json and fills it in a TSDevice struct. Allocates the necessary memory.

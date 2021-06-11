@@ -18,7 +18,7 @@
           <v-list-item
           v-for="key in Object.keys($store.state.devices)"
           :key="key"
-          @click="store.commit('changeDevice', key)">
+          @click="$store.commit('changeDevice', key)">
             <v-list-item-title v-text="key"></v-list-item-title>
           </v-list-item>
         </v-list>

@@ -23,6 +23,7 @@ static const char *TAG = "ts_client";
 
 static TSDevice *devices[10];
 extern char device_id[9];
+extern GeneralConfig general_config;
 
 void ts_scan_devices()
 {
@@ -39,18 +40,22 @@ void ts_scan_devices()
     devices[0]->ts_resp_status = &ts_serial_resp_status;
 
     //scan serial connection
-    devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
-    if (ts_serial_scan_device_info(devices[num]) != 0) {
-        devices[num] = ts_remove_device(devices[num]);
-    }
-    else {
-        num++;
+    if (general_config.ts_serial_active) {
+        devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
+        if (ts_serial_scan_device_info(devices[num]) != 0) {
+            devices[num] = ts_remove_device(devices[num]);
+        }
+        else {
+            num++;
+        }
     }
 
     //scan CAN connection
-    devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
-    if (ts_can_scan_device_info(devices[num]) != 0) {
-        devices[num] = ts_remove_device(devices[num]);
+    if (general_config.ts_can_active) {
+        devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
+        if (ts_can_scan_device_info(devices[num]) != 0) {
+            devices[num] = ts_remove_device(devices[num]);
+        }
     }
 }
 
@@ -185,7 +190,7 @@ void ts_parse_uri(const char *uri, TSUriElems *params)
 }
 
 
-char *ts_build_query_serial(uint8_t ts_method, TSUriElems *params, uint32_t *query_size)
+void *ts_build_query_serial(uint8_t ts_method, TSUriElems *params, uint32_t *query_size)
 {
     if (params == NULL) {
         return NULL;
@@ -201,7 +206,12 @@ char *ts_build_query_serial(uint8_t ts_method, TSUriElems *params, uint32_t *que
         nbytes += strlen_null(params->ts_payload) +1;
     }
     char *ts_query = (char *) malloc(nbytes);
-    //*query_size = nbytes;
+
+    // Special case when devices using the CAN Bus with TEXT-Mode,
+    // they must not send the termination bytes used with UART
+    if (query_size != NULL) {
+        *query_size = nbytes - 2;
+    }
 
     if (ts_query == NULL) {
         ESP_LOGE(TAG, "Unable to allocate memory for ts_query");
@@ -245,7 +255,7 @@ char *ts_build_query_serial(uint8_t ts_method, TSUriElems *params, uint32_t *que
     pos++;
     ts_query[pos] = '\0';
     ESP_LOGD(TAG, "Build query String: %s !", ts_query);
-    return ts_query;
+    return (void *) ts_query;
 }
 
 #ifndef UNIT_TEST
@@ -295,13 +305,14 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
     res->block = device->send(ts_query_string, query_size, device->CAN_Address, &block_len);
     res->block_len = block_len;
     if (res->block == NULL) {
-        ESP_LOGD(TAG, "No Response, freeing query string and device id");
+        ESP_LOGI(TAG, "No Response, freeing query string and device id");
         heap_caps_free(ts_query_string);
         heap_caps_free(params.ts_device_id);
         heap_caps_free(res);
         return NULL;
     }
-    //call status code first, data will be overwritten when device is using CAN
+
+    //call status code first, data will be overwritten when device is using CAN binary methods
     res->ts_status_code = device->ts_resp_status(res);
     res->data = device->ts_resp_data(res);
 
