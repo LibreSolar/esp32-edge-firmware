@@ -106,7 +106,7 @@ encode_double:
     return error;
 }
 
-uint8_t *ts_build_query_bin(uint8_t ts_method, TSUriElems *params, uint32_t *query_length)
+void *ts_build_query_bin(uint8_t ts_method, TSUriElems *params, uint32_t *query_length)
 {
     if (params == NULL) {
         return NULL;
@@ -119,7 +119,7 @@ uint8_t *ts_build_query_bin(uint8_t ts_method, TSUriElems *params, uint32_t *que
     buffersize += strlen_null(params->ts_target_node) + 1; // strlen + cbor string flag
     buffersize += strlen_null(params->ts_payload);      //assumption that cbor is always equal or smaller than json string
 
-    uint8_t *ts_query = (uint8_t *) calloc(0, buffersize);
+    uint8_t *ts_query = (uint8_t *) calloc(buffersize, sizeof(uint8_t));
 
     if (ts_query == NULL) {
         ESP_LOGE(TAG, "Unable to allocate memory for ts_query");
@@ -166,7 +166,7 @@ uint8_t *ts_build_query_bin(uint8_t ts_method, TSUriElems *params, uint32_t *que
         cJSON_free(payload);
     }
     *query_length = encoder.data.ptr - ts_query;
-    return ts_query;
+    return (void *) ts_query;
 }
 
 char *cbor2json(uint8_t *cbor, size_t len)
@@ -199,7 +199,7 @@ char *ts_cbor_resp_data(TSResponse *res)
     return(json);
 }
 
-uint8_t ts_cbor_resp_status(uint8_t *resp)
+uint8_t ts_cbor_resp_status(TSResponse *res)
 {
-    return resp[0];
+    return res->block[0];
 }

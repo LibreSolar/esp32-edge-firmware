@@ -74,8 +74,9 @@ void app_main(void)
 
         xTaskCreatePinnedToCore(ts_serial_rx_task, "ts_serial_rx", 4096,
             NULL, RX_TASK_PRIO, NULL, 1);
-        ts_scan_devices();
     }
+    //even without any connection activated, this will add the esp32-edge aka "self" to the device list
+    ts_scan_devices();
 
     if (strlen(general_config.wifi_ssid) > 0) {
         wifi_connect();

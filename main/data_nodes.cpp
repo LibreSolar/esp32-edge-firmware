@@ -151,14 +151,15 @@ void data_nodes_init()
     }
 }
 
-char *process_ts_request(char *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
+char *process_ts_request(void *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
 {
-    if (req[strlen(req) - 1] == '\n') {
-        req[strlen(req) - 1] = '\0';
+    char * r = (char *) req;
+    if (r[strlen(r) - 1] == '\n') {
+        r[strlen(r) - 1] = '\0';
     }
     size_t res_len = BUFFER_SIZE;
     char buf[res_len];
-    int len = ts.process((uint8_t *) req, strlen(req), (uint8_t *) buf, res_len);
+    int len = ts.process((uint8_t *) r, strlen(r), (uint8_t *) buf, res_len);
     if (len == 0) {
         return NULL;
     }
@@ -337,7 +338,7 @@ char *build_query(uint8_t method, char *node, char *payload)
     char base_node[32] = {"conf/"};
     params.ts_payload = payload;
     params.ts_target_node = strcat(base_node, node);
-    char *ts_request = ts_build_query_serial(method, &params, 0);
+    char *ts_request = (char *) ts_build_query_serial(method, &params, 0);
     //eliminate \n termination used for serial requests
     ts_request[strlen(ts_request) -1] = '\0';
     ESP_LOGD(TAG, "Build query to patch node values: %s", ts_request);

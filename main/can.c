@@ -21,7 +21,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 
-#include "driver/can.h"
+#include "driver/twai.h"
 #include "driver/gpio.h"
 
 #include "../lib/isotp/isotp.h"
@@ -52,10 +52,10 @@ uint32_t can_addr_server = 0x14;     // select MPPT or BMS
 // buffer for JSON string generated from received data objects via CAN
 static char json_buf[500];
 
-static const can_timing_config_t t_config = CAN_TIMING_CONFIG_500KBITS();
-static const can_filter_config_t f_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
-static const can_general_config_t g_config =
-    CAN_GENERAL_CONFIG_DEFAULT(CONFIG_GPIO_CAN_TX, CONFIG_GPIO_CAN_RX, CAN_MODE_NORMAL);
+static const twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS();
+static const twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+static const twai_general_config_t g_config =
+    TWAI_GENERAL_CONFIG_DEFAULT(CONFIG_GPIO_CAN_TX, CONFIG_GPIO_CAN_RX, TWAI_MODE_NORMAL);
 
 DataObject data_obj_bms[] = {
     {0x70, "Bat_V",     {0}, 0},
@@ -208,12 +208,12 @@ void can_setup()
     gpio_set_level(CONFIG_GPIO_CAN_STB, 0);
 #endif
 
-    if (can_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
+    if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to install CAN driver");
         return;
     }
 
-    if (can_start() != ESP_OK) {
+    if (twai_start() != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start CAN driver");
         return;
     }
@@ -231,20 +231,20 @@ void can_setup()
 
 void can_receive_task(void *arg)
 {
-    can_message_t message;
+    twai_message_t message;
     unsigned int device_addr;
     unsigned int data_node_id;
 
     uint8_t payload[500];
     int ret;
     while (1) {
-        ret = can_receive(&message, pdMS_TO_TICKS(10000));
+        ret = twai_receive(&message, pdMS_TO_TICKS(10000));
         if (ret == ESP_OK) {
             ESP_LOGD(TAG, "Received CAN Msg");
 
             /* checking for CAN ID used to receive ISO-TP frames */
             if (message.identifier == (can_addr_client << 8 | can_addr_server | 0x1ada << 16)) {
-                ESP_LOGI(TAG, "ISO TP msg part received: %.8s", message.data);
+                ESP_LOGD(TAG, "ISO TP msg part received");
                 isotp_on_can_message(&isotp_link, message.data, message.data_length_code);
 
                 /* process multiple frame transmissions and timeouts */
@@ -254,11 +254,11 @@ void can_receive_task(void *arg)
                 uint16_t out_size = 0;
                 int ret = isotp_receive(&isotp_link, payload, sizeof(payload) - 1, &out_size);
                 if (ret == ISOTP_RET_OK) {
-                    ESP_LOGI(TAG, "Received %d bytes via ISO-TP: %s", out_size, payload);
                     RecvMsg msg;
-                    uint8_t *data = malloc(out_size);
+                    uint8_t *data = malloc(out_size + 1);
                     memcpy(data, payload, out_size);
                     msg.data = data;
+                    msg.data[out_size] = '\0';
                     msg.len = out_size;
                     if (!xQueueSend(receive_queue, &msg, pdMS_TO_TICKS(10))) {
                         free(data);
@@ -292,8 +292,8 @@ void can_receive_task(void *arg)
                     }
                     update_mppt_received = true;
                 }
-                ESP_LOGI(TAG, "Received pub-msg on CAN:");
-                ESP_LOG_BUFFER_HEX_LEVEL(TAG, message.data, message.data_length_code, ESP_LOG_INFO);
+                ESP_LOGD(TAG, "Received pub-msg on CAN:");
+                //ESP_LOG_BUFFER_HEX_LEVEL(TAG, message.data, message.data_length_code, ESP_LOG_INFO);
             }
         }
         else {
@@ -307,22 +307,18 @@ void can_receive_task(void *arg)
     }
 }
 
-char *ts_can_send(uint8_t *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
+char *ts_can_send(void *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
 {
     RecvMsg msg;
     // empty queue before request, don't block if empty and
     // dismiss data if present
-    if (xQueueReceive(receive_queue, &msg, 100)) {
-        free(msg.data);
+    if (xQueueReceive(receive_queue, &msg, 50)) {
+        if (msg.data != NULL) {
+            free(msg.data);
+        }
     }
-    ESP_LOGI(TAG, "Sending out msg: %s with len: %d", req, query_size);
-    int ret = isotp_send(&isotp_link, (uint8_t *)"?info", 5);
-    if (ISOTP_RET_OK == ret) {
-        printf("ISOTP Send OK\n");
-    }
-    else {
-        printf("ISOTP Send ERROR\n");
-    }
+    int ret = isotp_send(&isotp_link, (uint8_t *) req, query_size);
+    ESP_LOGD(TAG, "ISOTP Send %s", ret == ESP_OK ? "OK" : "FAILED");
     if (xQueueReceive(receive_queue, &msg, pdMS_TO_TICKS(500))) {
         *block_len = msg.len;
         return (char *) msg.data;
@@ -332,19 +328,37 @@ char *ts_can_send(uint8_t *req, uint32_t query_size, uint8_t CAN_Address, uint32
 
 int ts_can_scan_device_info(TSDevice *device)
 {
-    uint8_t query[] = "?info";
     TSResponse res;
-    res.block = ts_can_send(query, strlen((char *) query), can_addr_server, &(res.block_len));
-    if (res.block != NULL) {
-        ESP_LOGI(TAG, "Got Response: %s", res.block);
-        res.data = ts_serial_resp_data(&res);
+    uint8_t query[] = "?info\n";
+    res.block = ts_can_send((void *) query, sizeof(query) - 2, can_addr_server, &(res.block_len));
 
+    if (ts_serial_resp_status(&res) == TS_STATUS_CONTENT) {
+        // CAN Bus is used in TEXT Mode for now so we use the serial methods here
+        res.data = ts_serial_resp_data(&res);
         cJSON *json_data = cJSON_Parse(res.data);
-        return ts_parse_device_info(json_data, device);
+        free(res.block);
+
+        if (json_data == NULL) {
+            ESP_LOGE(TAG, "Error parsing Json");
+            return ESP_FAIL;
+        }
+
+        int ret = ts_parse_device_info(json_data, device);
+        free(json_data);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Error parsing device information");
+            return ESP_FAIL;
+        };
+
+        device->build_query = ts_build_query_serial;
+        device->send = ts_can_send;
+        device->ts_resp_data = ts_serial_resp_data;
+        device->ts_resp_status = ts_serial_resp_status;
+        return ESP_OK;
     }
     else {
-        ESP_LOGE(TAG, "No Response");
-        return -1;
+        ESP_LOGE(TAG, "No valid response");
+        return ESP_FAIL;
     }
 }
 

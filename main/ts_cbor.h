@@ -9,7 +9,12 @@
 
 #include "ts_client.h"
 
-uint8_t *ts_build_query_bin(uint8_t ts_method, TSUriElems *params, uint32_t *query_length);
+void *ts_build_query_bin(uint8_t ts_method, TSUriElems *params, uint32_t *query_length);
+
 char *cbor2json(uint8_t *cbor, size_t len);
+
+uint8_t ts_cbor_resp_status(TSResponse *resp);
+
+char *ts_cbor_resp_data(TSResponse *res);
 
 #endif // TS_CBOR_H__
