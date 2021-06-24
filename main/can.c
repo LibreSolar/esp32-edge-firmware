@@ -331,7 +331,9 @@ int ts_can_scan_device_info(TSDevice *device)
     TSResponse res;
     uint8_t query[] = "?info\n";
     res.block = ts_can_send((void *) query, sizeof(query) - 2, can_addr_server, &(res.block_len));
-
+    if (res.block == NULL) {
+        res.block = "";
+    }
     if (ts_serial_resp_status(&res) == TS_STATUS_CONTENT) {
         // CAN Bus is used in TEXT Mode for now so we use the serial methods here
         res.data = ts_serial_resp_data(&res);
