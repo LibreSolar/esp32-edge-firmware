@@ -126,6 +126,13 @@ void ts_scan_devices();
 char *ts_get_device_list();
 
 /**
+ * Check if a CAN device is already known
+ *
+ * \returns pointer to TSDevice or NULL in case the device is not found
+ */
+TSDevice *ts_get_can_device(uint8_t can_addr);
+
+/**
  * Generate a ThingSet request header from HTTP URL and mode
  *
  * \returns Number of characters added to the buffer or 0 in case of error
@@ -153,9 +160,9 @@ int ts_parse_device_info(cJSON *json, TSDevice *device);
 
 /**
  * Frees all fields in the TSDevice struct and the struct itself.
- * \returns NULL in any case
  */
-void *ts_remove_device(TSDevice *device);
+void ts_remove_device(TSDevice *device);
+
 /**
  * Wrapper for strlen where NULL is interpreted as a string with length of zero
  */
@@ -164,4 +171,5 @@ int strlen_null(char *r);
 #ifdef __cplusplus
 }
 #endif
+
 #endif /* TS_CLIENT_H_ */

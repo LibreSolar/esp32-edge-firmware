@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 #include "ts_client.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,7 +42,8 @@ void ts_scan_devices()
     if (general_config.ts_serial_active) {
         devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
         if (ts_serial_scan_device_info(devices[num]) != 0) {
-            devices[num] = ts_remove_device(devices[num]);
+            ts_remove_device(devices[num]);
+            devices[num] = NULL;
         }
         else {
             num++;
@@ -54,7 +54,8 @@ void ts_scan_devices()
     if (general_config.ts_can_active) {
         devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
         if (ts_can_scan_device_info(devices[num]) != 0) {
-            devices[num] = ts_remove_device(devices[num]);
+            ts_remove_device(devices[num]);
+            devices[num] = NULL;
         }
     }
 }
@@ -88,12 +89,20 @@ char *ts_get_device_list()
 
 TSDevice *ts_get_device(char *device_id)
 {
-    int i = 0;
-    while (devices[i] != NULL) {
+    for (int i = 0; devices[i] != NULL && i < sizeof(devices); i++) {
         if (strcmp(devices[i]->ts_device_id, device_id) == 0) {
             return devices[i];
         }
-        i++;
+    }
+    return NULL;
+}
+
+TSDevice *ts_get_can_device(uint8_t can_addr)
+{
+    for (int i = 0; devices[i] != NULL && i < sizeof(devices); i++) {
+        if (devices[i]->can_address == can_addr) {
+            return devices[i];
+        }
     }
     return NULL;
 }
@@ -119,10 +128,10 @@ int ts_parse_device_info(cJSON *json, TSDevice *device)
     return 0;
 }
 
-void *ts_remove_device(TSDevice *device)
+void ts_remove_device(TSDevice *device)
 {
     if (device == NULL) {
-        return NULL;
+        return;
     }
     if (device->ts_name != NULL) {
         free(device->ts_name);
@@ -131,10 +140,10 @@ void *ts_remove_device(TSDevice *device)
         free(device->ts_device_id);
     }
     free(device);
-    return NULL;
 }
 
 #endif
+
 // wrapper for strlen() to check for NULL
 int strlen_null(char *r)
 {
@@ -190,7 +199,6 @@ void ts_parse_uri(const char *uri, TSUriElems *params)
     ESP_LOGD(TAG, "Target Node: %s", params->ts_target_node);
     ESP_LOGD(TAG, "List the sub nodes: %s", params->ts_list_subnodes == 0 ? "yes" : "no");
 }
-
 
 void *ts_build_query_serial(uint8_t ts_method, TSUriElems *params, uint32_t *query_size)
 {
