@@ -150,7 +150,7 @@ void ts_mqtt_pub_task(void *arg)
             err = ts_serial_scan_device_info(&ts_device);
             if (err) {
                 ESP_LOGE(TAG, "No device found, waiting 1 minute");
-                vTaskDelay(6 * 1000 / portTICK_PERIOD_MS);
+                vTaskDelay(60 * 1000 / portTICK_PERIOD_MS);
                 continue;
             }
             else {
