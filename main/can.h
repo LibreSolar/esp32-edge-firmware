@@ -41,7 +41,7 @@ typedef struct {
  *
  * \returns A pointer to the response block, to be freed subsequently
  */
-char *ts_can_send(void *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len);
+char *ts_can_send(uint8_t *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len);
 
 
 int ts_can_scan_device_info(TSDevice *device);

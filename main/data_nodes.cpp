@@ -151,7 +151,7 @@ void data_nodes_init()
     }
 }
 
-char *process_ts_request(void *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len)
+char *process_ts_request(uint8_t *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len)
 {
     char * r = (char *) req;
     if (r[strlen(r) - 1] == '\n') {
@@ -181,7 +181,7 @@ TSResponse *process_local_request(char *req, uint8_t can_address)
     }
     TSResponse *res = reinterpret_cast<TSResponse*>(malloc(sizeof(TSResponse)));
 
-    res->block = process_ts_request(req, 0, 0, 0);
+    res->block = process_ts_request((uint8_t *)req, 0, 0, 0);
     res->data = ts_serial_resp_data(res);
 
     if (res->block == NULL) {

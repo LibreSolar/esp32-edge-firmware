@@ -307,7 +307,7 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
     }
     // send is already a pointer to the correct function
     uint32_t block_len = 0;
-    res->block = device->send(ts_query_string, query_size, device->can_address, &block_len);
+    res->block = device->send((uint8_t *)ts_query_string, query_size, device->can_address, &block_len);
     res->block_len = block_len;
     if (res->block == NULL) {
         ESP_LOGI(TAG, "No Response, freeing query string and device id");

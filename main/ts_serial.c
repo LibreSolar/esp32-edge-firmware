@@ -212,7 +212,7 @@ void ts_serial_response_clear()
 
 // can_address and request length is not needed here, but we need the same signature
 // as CAN send
-char *ts_serial_send(void *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len)
+char *ts_serial_send(uint8_t *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len)
 {
     if ((char *) req == NULL) {
         ESP_LOGE(TAG, "Got invalid parameter");

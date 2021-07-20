@@ -68,7 +68,7 @@ void data_nodes_init();
  * send function from TSDevice struct as it is used only internally,
  * but could also be used by a UART/CAN task to process ThingSet requests in general
  */
-char *process_ts_request(void *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len);
+char *process_ts_request(uint8_t *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len);
 
 void uint64_to_base32(uint64_t in, char *out, size_t size);
 
