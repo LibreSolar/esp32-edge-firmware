@@ -63,6 +63,8 @@ void app_main(void)
 
     init_fs();
 
+    ts_devices_init();
+
     if (general_config.ts_can_active) {
         can_setup();
         xTaskCreatePinnedToCore(can_receive_task, "CAN_rx", 4096,
@@ -71,12 +73,10 @@ void app_main(void)
 
     if (general_config.ts_serial_active) {
         ts_serial_setup();
-
         xTaskCreatePinnedToCore(ts_serial_rx_task, "ts_serial_rx", 4096,
             NULL, RX_TASK_PRIO, NULL, 1);
+        ts_devices_scan_serial();
     }
-    //even without any connection activated, this will add the esp32-edge aka "self" to the device list
-    ts_scan_devices();
 
     if (strlen(general_config.wifi_ssid) > 0) {
         wifi_connect();

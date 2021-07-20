@@ -111,10 +111,14 @@ char *ts_serial_resp_data(TSResponse *res);
 uint8_t ts_serial_resp_status(TSResponse *res);
 
 /**
- * Initializes the internal device list and scans
- * both serial and CAN Bus for devices
+ * Initializes the device list by adding this device itself
  */
-void ts_scan_devices();
+void ts_devices_init();
+
+/**
+ * Scans the serial interface for a device and adds it if existing
+ */
+void ts_devices_scan_serial();
 
 /**
  * Will return a list with the names and IDs of connected devices

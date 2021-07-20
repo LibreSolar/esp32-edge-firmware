@@ -24,10 +24,8 @@ static TSDevice *devices[10];
 extern char device_id[9];
 extern GeneralConfig general_config;
 
-void ts_scan_devices()
+void ts_devices_init()
 {
-    int num = 1;
-
     // Add self to devices
     devices[0] = (TSDevice *) malloc(sizeof(TSDevice));
     devices[0]->ts_device_id = device_id;
@@ -37,23 +35,20 @@ void ts_scan_devices()
     devices[0]->build_query = &ts_build_query_serial;
     devices[0]->ts_resp_data = &ts_serial_resp_data;
     devices[0]->ts_resp_status = &ts_serial_resp_status;
+}
 
-    //scan serial connection
-    if (general_config.ts_serial_active) {
-        devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
-        if (ts_serial_scan_device_info(devices[num]) != 0) {
-            ts_remove_device(devices[num]);
-            devices[num] = NULL;
-        }
-        else {
-            num++;
-        }
+void ts_devices_scan_serial()
+{
+    int num = 1;
+    while (devices[num] != NULL && num < sizeof(devices)) {
+        num++;
     }
 
-    //scan CAN connection
-    if (general_config.ts_can_active) {
+    // scan serial connection
+    if (num < sizeof(devices) && general_config.ts_serial_active) {
         devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
-        if (ts_can_scan_device_info(devices[num]) != 0) {
+        int err = ts_serial_scan_device_info(devices[num]);
+        if (err) {
             ts_remove_device(devices[num]);
             devices[num] = NULL;
         }
@@ -64,7 +59,7 @@ char *ts_get_device_list()
 {
     if (devices[0] == NULL) {
         // scan again if no devices were found
-        ts_scan_devices();
+        ts_devices_scan_serial();
     }
 
     cJSON *obj = cJSON_CreateObject();
