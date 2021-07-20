@@ -36,12 +36,12 @@ typedef struct {
  *
  * @param req A pointer to a buffer with either a string or binary request
  * @param query_size The size of the buffer, not including zero termination byte for strings
- * @param CAN_Address The target address on the CAN bus
+ * @param can_address The target address on the CAN bus
  * @param block_len A pointer to a variable where the length of the response block will be stored
  *
  * \returns A pointer to the response block, to be freed subsequently
  */
-char *ts_can_send(void *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len);
+char *ts_can_send(void *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len);
 
 
 int ts_can_scan_device_info(TSDevice *device);

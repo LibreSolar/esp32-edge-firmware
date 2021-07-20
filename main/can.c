@@ -47,7 +47,7 @@ static uint8_t isotp_recv_buf[ISOTP_BUFSIZE];
 static uint8_t isotp_send_buf[ISOTP_BUFSIZE];
 
 uint32_t can_addr_client = 0xF1;     // this device
-uint32_t can_addr_server = 0x14;     // select MPPT or BMS
+uint32_t can_addr_server = 0x14;     // select MPPT (14) or BMS (0a)
 
 // buffer for JSON string generated from received data objects via CAN
 static char json_buf[500];
@@ -240,7 +240,8 @@ void can_receive_task(void *arg)
     while (1) {
         ret = twai_receive(&message, pdMS_TO_TICKS(10000));
         if (ret == ESP_OK) {
-            ESP_LOGD(TAG, "Received CAN Msg");
+            device_addr = message.identifier & 0x000000FF;
+            ESP_LOGD(TAG, "Received CAN msg from %.2x", device_addr);
 
             /* checking for CAN ID used to receive ISO-TP frames */
             if (message.identifier == (can_addr_client << 8 | can_addr_server | 0x1ada << 16)) {
@@ -269,8 +270,7 @@ void can_receive_task(void *arg)
             }
             else {
                 // ThingSet publication message format: https://libre.solar/thingset/
-                device_addr = message.identifier & 0x000000FF;
-                data_node_id = (message.identifier >> 8) & 0x0000FFFF;
+                data_node_id = (message.identifier & 0x00FFFF00) >> 8;
 
                 if (device_addr == 0) {
                     for (int i = 0; i < sizeof(data_obj_bms) / sizeof(DataObject); i++) {
@@ -298,7 +298,7 @@ void can_receive_task(void *arg)
         }
         else {
             if (ret == ESP_ERR_TIMEOUT) {
-                ESP_LOGE(TAG, "Received timed out");
+                ESP_LOGE(TAG, "Receive timed out");
             }
             else if (ret == ESP_ERR_INVALID_STATE) {
                 ESP_LOGE(TAG, "Driver in invalid state");
@@ -307,7 +307,7 @@ void can_receive_task(void *arg)
     }
 }
 
-char *ts_can_send(void *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
+char *ts_can_send(void *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len)
 {
     RecvMsg msg;
     // empty queue before request, don't block if empty and
@@ -330,18 +330,19 @@ int ts_can_scan_device_info(TSDevice *device)
 {
     TSResponse res;
     uint8_t query[] = "?info\n";
-    res.block = ts_can_send((void *) query, sizeof(query) - 2, can_addr_server, &(res.block_len));
+
+    res.block = ts_can_send((void *)query, sizeof(query) - 2, can_addr_server, &(res.block_len));
     if (res.block == NULL) {
         res.block = "";
     }
     if (ts_serial_resp_status(&res) == TS_STATUS_CONTENT) {
-        // CAN Bus is used in TEXT Mode for now so we use the serial methods here
+        // CAN bus is used in TEXT Mode for now so we use the serial methods here
         res.data = ts_serial_resp_data(&res);
         cJSON *json_data = cJSON_Parse(res.data);
         free(res.block);
 
         if (json_data == NULL) {
-            ESP_LOGE(TAG, "Error parsing Json");
+            ESP_LOGE(TAG, "Error parsing JSON");
             return ESP_FAIL;
         }
 

@@ -81,11 +81,11 @@ typedef struct {
 * should be set accordingly to either the serial or CAN send function
 */
 typedef struct {
-    uint8_t CAN_Address;
+    uint8_t can_address;
     char *ts_device_id;
     char *ts_name;
     //function pointer to send requests to device, abstracting underlying connection
-    char *(*send)(void *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len);
+    char *(*send)(void *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len);
     void *(*build_query)(uint8_t ts_method, TSUriElems *params, uint32_t* query_size);
     char *(*ts_resp_data)(TSResponse *res);
     uint8_t (*ts_resp_status)(TSResponse *res);

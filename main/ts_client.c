@@ -33,7 +33,7 @@ void ts_scan_devices()
     devices[0] = (TSDevice *) malloc(sizeof(TSDevice));
     devices[0]->ts_device_id = device_id;
     devices[0]->ts_name = "self";
-    devices[0]->CAN_Address = 0;
+    devices[0]->can_address = 0;
     devices[0]->send = &process_ts_request;
     devices[0]->build_query = &ts_build_query_serial;
     devices[0]->ts_resp_data = &ts_serial_resp_data;
@@ -304,7 +304,7 @@ TSResponse *ts_execute(const char *uri, char *content, int http_method)
     }
     // send is already a pointer to the correct function
     uint32_t block_len = 0;
-    res->block = device->send(ts_query_string, query_size, device->CAN_Address, &block_len);
+    res->block = device->send(ts_query_string, query_size, device->can_address, &block_len);
     res->block_len = block_len;
     if (res->block == NULL) {
         ESP_LOGI(TAG, "No Response, freeing query string and device id");

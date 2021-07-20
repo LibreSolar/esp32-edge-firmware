@@ -151,7 +151,7 @@ void data_nodes_init()
     }
 }
 
-char *process_ts_request(void *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len)
+char *process_ts_request(void *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len)
 {
     char * r = (char *) req;
     if (r[strlen(r) - 1] == '\n') {
@@ -174,7 +174,7 @@ char *process_ts_request(void *req, uint32_t query_size, uint8_t CAN_Address, ui
     return resp;
 }
 
-TSResponse *process_local_request(char *req, uint8_t CAN_Address)
+TSResponse *process_local_request(char *req, uint8_t can_address)
 {
     if (req[strlen(req) - 1] == '\n') {
         req[strlen(req) - 1] = '\0';

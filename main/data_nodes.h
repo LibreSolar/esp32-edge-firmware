@@ -64,11 +64,11 @@ extern "C"
 void data_nodes_init();
 
 /**
- * Process incomming Thingset requests. Has CAN Address to match
- * send function from TSDevice struct as it is used only internaly for,
+ * Process incoming Thingset requests. Has CAN address to match
+ * send function from TSDevice struct as it is used only internally,
  * but could also be used by a UART/CAN task to process ThingSet requests in general
  */
-char *process_ts_request(void *req, uint32_t query_size, uint8_t CAN_Address, uint32_t *block_len);
+char *process_ts_request(void *req, uint32_t query_size, uint8_t can_address, uint32_t *block_len);
 
 void uint64_to_base32(uint64_t in, char *out, size_t size);
 
