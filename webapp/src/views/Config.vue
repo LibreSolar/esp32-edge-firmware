@@ -1,28 +1,28 @@
 <template>
- <v-container fill-height fluid>
+  <v-container fill-height fluid>
     <v-layout text-center align-center>
       <v-flex>
         <v-card class="mx-auto my-auto" max-width="1200">
           <v-card-title primary-title class="justify-center">Configuration</v-card-title>
           <v-card-text v-if="!loading">
             <v-row justify="center" dense no-gutters>
-                <v-col
-                  v-for="(value, name) in dataObjects"
-                  :key="name"
-                  cols=12
-                  md="6"
-                  sm="8"
-                  lg="4"
-                  class="px-1 ma-0">
-                  <v-text-field
-                    :label="prettyStrings[name] ? prettyStrings[name].title.en : name"
-                    v-model="dataObjects[name]"
-                    :suffix="prettyStrings[name] ? prettyStrings[name].unit : (name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : '')"
-                    outlined
-                    :dense="$vuetify.breakpoint.smAndDown"
-                    class="pa-0 ma-0"
-                  ></v-text-field>
-                </v-col>
+              <v-col
+                v-for="(value, name) in dataObjects"
+                :key="name"
+                cols=12
+                md="6"
+                sm="8"
+                lg="4"
+                class="px-1 ma-0">
+                <v-text-field
+                  :label="prettyStrings[name] ? prettyStrings[name].title.en : name"
+                  v-model="dataObjects[name]"
+                  :suffix="prettyStrings[name] ? prettyStrings[name].unit : (name.search('_') > 0 ? name.split('_')[1].replace('degC', '°C') : '')"
+                  outlined
+                  :dense="$vuetify.breakpoint.smAndDown"
+                  class="pa-0 ma-0"
+                ></v-text-field>
+              </v-col>
             </v-row>
           </v-card-text>
           <v-card-text class="text-center pa-4" v-else>
@@ -115,7 +115,7 @@ export default {
           this.baseData = JSON.parse(JSON.stringify(res.data))
         })
         .catch(error => {
-          this.status = "Configuration Information could not be fetched: " + error.response.status + "-" + error.response.data
+          this.status = "Configuration Information could not be fetched: " + error.response.status + " " + error.response.data
           this.alert = true
         })
     },

@@ -149,7 +149,7 @@ export default new Vuex.Store({
     },
     async createPrettyStrings({ commit }, section) {
       let id = this.state.activeDeviceId
-      if(this.state.thingsetStrings[id]) {
+      if (this.state.thingsetStrings[id]) {
         return this.state.thingsetStrings[id][section]
       } else {
         return {}

@@ -3,9 +3,7 @@
     <v-layout text-center align-center>
       <v-flex class="text-center">
         <v-card max-width="600" class="mx-auto my-auto">
-          <v-card-title class="justify-center"
-            >Over-the-Air-Upgrade</v-card-title
-          >
+          <v-card-title class="justify-center">Over-the-Air-Upgrade</v-card-title>
           <v-card-text>
             <v-row justify="center" dense>
               <v-col cols="10">
@@ -38,9 +36,7 @@
                   :loading="uploading"
                   :disabled="uploadDisabled"
                   @click="upload()"
-                >
-                  Upload</v-btn
-                >
+                >Upload</v-btn>
               </v-col>
               <v-spacer></v-spacer>
               <v-col cols="2">
@@ -48,10 +44,8 @@
                   :loading="flashing"
                   :disabled="flashDisabled"
                   @click="flash()"
-                >
-                  Flash</v-btn
-                ></v-col
-              >
+                >Flash</v-btn
+              ></v-col>
               <v-spacer></v-spacer>
             </v-row>
             <v-row justify="center">

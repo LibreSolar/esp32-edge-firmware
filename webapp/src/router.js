@@ -10,7 +10,6 @@ import Ota from './views/Ota.vue'
 import DataLog from './views/DataLog.vue'
 import ConfigGeneral from './views/ConfigGeneral.vue'
 
-
 Vue.use(Router)
 
 const router = new Router({

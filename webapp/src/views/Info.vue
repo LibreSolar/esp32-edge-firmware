@@ -31,11 +31,11 @@
             type="warning"
             transition="scale-transition"
             ><v-row align="center">
-                <v-col class="grow">{{ status }}</v-col>
-                <v-col class="shrink">
-                  <v-btn color="warning" @click="fetchData()">Reload</v-btn>
-                </v-col>
-              </v-row></v-alert>
+              <v-col class="grow">{{ status }}</v-col>
+              <v-col class="shrink">
+                <v-btn color="warning" @click="fetchData()">Reload</v-btn>
+              </v-col>
+            </v-row></v-alert>
           </v-card-text>
         </v-card>
       </v-flex>
@@ -70,7 +70,7 @@ export default {
       });
     },
     showError: function(error) {
-      this.status = "Device Information could not be fetched: " + error.response.status + "-" + error.response.data
+      this.status = "Device Information could not be fetched: " + error.response.status + " " + error.response.data
       this.alert = true
     }
   }

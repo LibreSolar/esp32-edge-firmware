@@ -24,30 +24,30 @@
         </v-list>
       </v-menu>
       <v-spacer></v-spacer>
-     <v-menu bottom left>
-            <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                icon
-                large
-                v-bind="attrs"
-                v-on="on"
-                class="primary">
-                  <v-icon>mdi-ship-wheel</v-icon>
-                 </v-btn>
-            </template>
-            <v-list>
-                <v-list-item
-                v-for="(item, i) in optionItems"
-                :key="i"
-                link :to="item.href">
-                    <v-list-item-title><v-icon class="mx-1">{{ item.icon }}</v-icon>{{ item.title }}</v-list-item-title>
-                </v-list-item>
-                <v-list-item
-                href="https://github.com/LibreSolar/data-manager-firmware"
-                target="_blank"
-                text><v-icon class="mx-1">mdi-open-in-new</v-icon> Latest Release </v-list-item>
-            </v-list>
-        </v-menu>
+      <v-menu bottom left>
+        <template v-slot:activator="{ on, attrs }">
+            <v-btn
+            icon
+            large
+            v-bind="attrs"
+            v-on="on"
+            class="primary">
+              <v-icon>mdi-ship-wheel</v-icon>
+              </v-btn>
+        </template>
+        <v-list>
+            <v-list-item
+            v-for="(item, i) in optionItems"
+            :key="i"
+            link :to="item.href">
+                <v-list-item-title><v-icon class="mx-1">{{ item.icon }}</v-icon>{{ item.title }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item
+            href="https://github.com/LibreSolar/data-manager-firmware"
+            target="_blank"
+            text><v-icon class="mx-1">mdi-open-in-new</v-icon> Latest Release </v-list-item>
+        </v-list>
+      </v-menu>
     </v-app-bar>
 
     <v-main class="accent">
@@ -59,7 +59,7 @@
       dismissible
       class="ma-4"
       >{{ $store.state.globAlertMsg }}</v-alert>
-        <router-view/>
+      <router-view/>
     </v-main>
 
     <v-navigation-drawer v-model="drawer" app clipped :expand-on-hover="$vuetify.breakpoint.lgAndUp">

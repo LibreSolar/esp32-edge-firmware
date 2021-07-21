@@ -6,30 +6,30 @@
           <v-card-title primary-title class="justify-center">Live View</v-card-title>
           <v-card-text>
             <v-row justify="center" dense>
-                <v-col cols=8>
-                    <v-select
-                    v-model="selectedData"
-                    :items="Array.from(availableData.keys())"
-                    :menu-props="{ maxHeight: '400' }"
-                    label="Select"
-                    multiple
-                    chips
-                    hint="Pick data nodes for display"
-                    persistent-hint
-                    ></v-select>
-                </v-col>
+              <v-col cols=8>
+                <v-select
+                  v-model="selectedData"
+                  :items="Array.from(availableData.keys())"
+                  :menu-props="{ maxHeight: '400' }"
+                  label="Select"
+                  multiple
+                  chips
+                  hint="Pick data nodes for display"
+                  persistent-hint
+                  ></v-select>
+              </v-col>
             </v-row>
             <v-row justify="center" dense>
-                <v-spacer></v-spacer>
-                <v-col cols=8>
-                    <v-btn @click="clearSelection()">Clear Selection</v-btn></v-col>
-                <v-spacer></v-spacer>
+              <v-spacer></v-spacer>
+              <v-col cols=8>
+                <v-btn @click="clearSelection()">Clear Selection</v-btn>
+              </v-col>
+              <v-spacer></v-spacer>
             </v-row>
-
             <v-row justify="center" class="flex-grow-0">
-                <v-col cols=12 >
-                  <line-chart :chart-data="storedata" :height="180" :responsive=false :options="options"></line-chart>
-                </v-col>
+              <v-col cols=12 >
+                <line-chart :chart-data="storedata" :height="180" :responsive=false :options="options"></line-chart>
+              </v-col>
             </v-row>
           </v-card-text>
         </v-card>
@@ -59,9 +59,9 @@
   </v-container>
   <div class="text-center pa-4" v-else>
     <v-progress-circular
-    indeterminate
-    color="primary"
-    ></v-progress-circular>
+      indeterminate
+      color="primary"
+      ></v-progress-circular>
   </div>
 </template>
 
@@ -76,7 +76,6 @@ const chartColors = {
 	blue: 'rgb(54, 162, 235)',
 	purple: 'rgb(153, 102, 255)'
 };
-
 
 export default {
   components: {

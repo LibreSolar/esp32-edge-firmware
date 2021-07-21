@@ -1,5 +1,5 @@
 <template>
- <v-container fill-height fluid>
+  <v-container fill-height fluid>
     <v-layout text-center align-center>
       <v-flex>
         <v-card class="mx-auto my-auto" max-width="1200">
@@ -16,27 +16,27 @@
           >
             <v-card-text>
             <v-row justify="center" dense no-gutters>
-                <v-col
-                  v-for="name in Object.keys(values)"
-                  :key="name"
-                  cols=12
-                  md="6"
-                  sm="8"
-                  lg="6"
-                  class="px-1 ma-1">
-                  <v-text-field
-                    v-if="!isBoolean(values[name])"
-                    :label="name"
-                    v-model="values[name]"
-                    outlined
-                    :dense="$vuetify.breakpoint.smAndDown"
-                    class="pa-0 ma-0"
-                  ></v-text-field>
-                  <v-checkbox
-                    v-else
-                    v-model="values[name]"
-                    :label="name"></v-checkbox>
-                </v-col>
+              <v-col
+                v-for="name in Object.keys(values)"
+                :key="name"
+                cols=12
+                md="6"
+                sm="8"
+                lg="6"
+                class="px-1 ma-1">
+                <v-text-field
+                  v-if="!isBoolean(values[name])"
+                  :label="name"
+                  v-model="values[name]"
+                  outlined
+                  :dense="$vuetify.breakpoint.smAndDown"
+                  class="pa-0 ma-0"
+                ></v-text-field>
+                <v-checkbox
+                  v-else
+                  v-model="values[name]"
+                  :label="name"></v-checkbox>
+              </v-col>
             </v-row>
             <v-btn color="primary" @click="saveValues(key)" class="mx-4">
               <v-icon left>mdi-checkbox-marked-circle</v-icon> Save
@@ -98,7 +98,7 @@ export default {
           this.nodes = res.data
         })
         .catch(error => {
-          this.status = "Configuration Information could not be fetched: " + error.response.status + "-" + error.response.data
+          this.status = "Configuration Information could not be fetched: " + error.response.status + " " + error.response.data
           this.alert_type = "warning"
           this.alert = true
           setTimeout(this.clearAlert, 3000);
@@ -115,7 +115,7 @@ export default {
             this.dataObjects[node] = res.data
           })
           .catch(error => {
-            this.status = "Configuration Information could not be fetched: " + error.response.status + "-" + error.response.data
+            this.status = "Configuration Information could not be fetched: " + error.response.status + " " + error.response.data
             this.alert_type = "warning"
             this.alert = true
             setTimeout(this.clearAlert, 3000);
@@ -134,7 +134,7 @@ export default {
         setTimeout(this.clearAlert, 3000);
       })
       .catch(error => {
-        this.status = "Configuration could not be written: " + error.response.status + "-" + error.response.data
+        this.status = "Configuration could not be written: " + error.response.status + " " + error.response.data
         this.alert_type = "warning"
         this.alert = true
         setTimeout(this.clearAlert, 3000);
@@ -151,7 +151,7 @@ export default {
         setTimeout(this.clearAlert, 3000);
       })
       .catch(error => {
-        this.status = "Something went wrong: " + error.response.status + "-" + error.response.data
+        this.status = "Something went wrong: " + error.response.status + " " + error.response.data
         this.alert_type = "warning"
         this.alert = true
         setTimeout(this.clearAlert, 3000);

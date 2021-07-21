@@ -1,5 +1,5 @@
 <template>
- <v-container fill-height fluid>
+  <v-container fill-height fluid>
     <v-layout text-center align-center>
       <v-flex>
         <v-card class="mx-auto my-auto" max-width="300">
@@ -78,7 +78,7 @@ export default {
           this.dataObjects = res.data
         })
         .catch(error => {
-          this.status = "Information could not be fetched: " + error.response.status + "-" + error.response.data
+          this.status = "Information could not be fetched: " + error.response.status + " " + error.response.data
           this.alert = true
         })
     },
@@ -92,7 +92,7 @@ export default {
           this.alert = false
       })
       .catch(error => {
-        this.status = "Value could not be set: " + error.response.status + "-" + error.response.data
+        this.status = "Value could not be set: " + error.response.status + " " + error.response.data
         this.alert = true
       })
     }
