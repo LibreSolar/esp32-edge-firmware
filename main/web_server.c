@@ -341,6 +341,7 @@ esp_err_t start_web_server(const char *base_path)
     config.core_id = 1;
     config.max_uri_handlers = 16;
     config.stack_size = 8*1024;
+    config.lru_purge_enable = true;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
     url_offset_ts = strlen("/api/v1/ts/");
