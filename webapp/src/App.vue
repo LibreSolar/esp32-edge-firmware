@@ -6,7 +6,7 @@
       clipped-left
       dark
     >
-      <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+      <v-app-bar-nav-icon v-if="!setup" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-spacer></v-spacer>
       <v-menu offset-y>
         <template v-slot:activator=" {on, attrs}">
@@ -16,38 +16,19 @@
         </template>
         <v-list>
           <v-list-item
-          v-for="key in Object.keys($store.state.devices)"
-          :key="key"
-          @click="$store.commit('changeDevice', key)">
+            v-for="key in Object.keys($store.state.devices)"
+            :key="key"
+            @click="$store.commit('changeDevice', key); setup = false"
+            link to="/info"
+          >
             <v-list-item-title v-text="key"></v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
       <v-spacer></v-spacer>
-      <v-menu bottom left>
-        <template v-slot:activator="{ on, attrs }">
-            <v-btn
-            icon
-            large
-            v-bind="attrs"
-            v-on="on"
-            class="primary">
-              <v-icon>mdi-ship-wheel</v-icon>
-              </v-btn>
-        </template>
-        <v-list>
-            <v-list-item
-            v-for="(item, i) in optionItems"
-            :key="i"
-            link :to="item.href">
-                <v-list-item-title><v-icon class="mx-1">{{ item.icon }}</v-icon>{{ item.title }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item
-            href="https://github.com/LibreSolar/data-manager-firmware"
-            target="_blank"
-            text><v-icon class="mx-1">mdi-open-in-new</v-icon> Latest Release </v-list-item>
-        </v-list>
-      </v-menu>
+      <v-btn icon large link to="/esp-config" class="primary" @click="setup = true">
+        <v-icon>mdi-cog</v-icon>
+      </v-btn>
     </v-app-bar>
 
     <v-main class="accent">
@@ -62,7 +43,7 @@
       <router-view/>
     </v-main>
 
-    <v-navigation-drawer v-model="drawer" app clipped :expand-on-hover="$vuetify.breakpoint.lgAndUp">
+    <v-navigation-drawer v-model="drawer" app clipped v-if="!setup">
       <v-list dense nav>
         <v-list-item
           v-for="item in items"
@@ -115,11 +96,7 @@ export default {
         { title: 'Data Log', href: '/data-log', icon: 'mdi-chart-bar' },
         { title: 'Firmware Upgrade', href: '/ota', icon: 'mdi-upload'}
       ],
-      optionItems: [
-        { title: 'Home', href: '/', icon: 'mdi-home-circle'},
-        { title: 'Settings', href: '/esp-config', icon: 'mdi-cog'}
-      ],
-      right: null,
+      setup: false
     }
   }
 };

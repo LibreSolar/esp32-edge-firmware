@@ -26,10 +26,10 @@ export default new Vuex.Store({
     changeDevice(state, key) {
       state.activeDevice = key
       state.activeDeviceId = state.devices[key]
-      if(!state.info[key])
+      if (!state.info[key])
         this.dispatch("getDeviceInfo").then(() => {
           this.dispatch("getThingsetStrings")
-      })
+        })
     },
     saveDevices(state, devices) {
       state.self = devices['self']
