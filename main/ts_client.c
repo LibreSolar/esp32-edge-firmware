@@ -55,16 +55,32 @@ void ts_devices_scan_serial()
     }
 }
 
-char *ts_get_device_list()
+void ts_devices_add_can(uint8_t can_addr)
 {
-    if (devices[0] == NULL) {
-        // scan again if no devices were found
-        ts_devices_scan_serial();
+    int num = 1;
+    while (devices[num] != NULL && num < sizeof(devices)) {
+        num++;
     }
 
+    if (num < sizeof(devices) && general_config.ts_can_active) {
+        devices[num] = (TSDevice *) calloc(1, sizeof(TSDevice));
+        devices[num]->can_address = can_addr;
+    }
+}
+
+char *ts_get_device_list()
+{
     cJSON *obj = cJSON_CreateObject();
     int i = 0;
     while (devices[i] != NULL) {
+        if (devices[i]->can_address > 0 && devices[i]->ts_device_id == NULL) {
+            // device information not yet obtained
+            int err = ts_can_scan_device_info(devices[i]);
+            if (err) {
+                ts_remove_device(devices[i]);
+                devices[i] = NULL;
+            }
+        }
         cJSON *id = cJSON_CreateString(devices[i]->ts_device_id);
         cJSON_AddItemToObject(obj, devices[i]->ts_name, id);
         i++;
@@ -84,9 +100,11 @@ char *ts_get_device_list()
 
 TSDevice *ts_get_device(char *device_id)
 {
-    for (int i = 0; devices[i] != NULL && i < sizeof(devices); i++) {
-        if (strcmp(devices[i]->ts_device_id, device_id) == 0) {
-            return devices[i];
+    for (int i = 0; i < sizeof(devices); i++) {
+        if (devices[i] != NULL && devices[i]->ts_device_id != NULL) {
+            if (strcmp(devices[i]->ts_device_id, device_id) == 0) {
+                return devices[i];
+            }
         }
     }
     return NULL;

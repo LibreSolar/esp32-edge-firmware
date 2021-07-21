@@ -37,7 +37,7 @@ bool update_mppt_received = false;
 
 xQueueHandle receive_queue;
 #define RECV_QUEUE_SIZE 1
-#define ISOTP_BUFSIZE 512
+#define ISOTP_BUFSIZE 1000
 
 /* Alloc IsoTpLink statically in RAM */
 static IsoTpLink isotp_link;
@@ -235,13 +235,19 @@ void can_receive_task(void *arg)
     unsigned int device_addr;
     unsigned int data_node_id;
 
-    uint8_t payload[500];
+    uint8_t payload[1000];
     int ret;
     while (1) {
         ret = twai_receive(&message, pdMS_TO_TICKS(10000));
         if (ret == ESP_OK) {
             device_addr = message.identifier & 0x000000FF;
             ESP_LOGD(TAG, "Received CAN msg from %.2x", device_addr);
+
+            TSDevice *ts_dev = ts_get_can_device(device_addr);
+            if (ts_dev == NULL) {
+                ts_devices_add_can(device_addr);
+                ESP_LOGI(TAG, "Adding CAN device %x", device_addr);
+            }
 
             /* checking for CAN ID used to receive ISO-TP frames */
             if (message.identifier == (can_addr_client << 8 | can_addr_server | 0x1ada << 16)) {
@@ -261,9 +267,12 @@ void can_receive_task(void *arg)
                     msg.data = data;
                     msg.data[out_size] = '\0';
                     msg.len = out_size;
+                    ESP_LOGD(TAG, "Received response: %s", (char *)msg.data);
                     if (!xQueueSend(receive_queue, &msg, pdMS_TO_TICKS(10))) {
+                        ESP_LOGE(TAG, "Response could not be queued");
                         free(data);
-                    } else if (ret == ISOTP_RET_NO_DATA) {
+                    }
+                    else if (ret == ISOTP_RET_NO_DATA) {
                         ESP_LOGE(TAG, "isotp_receive(): No Data Received");
                     }
                 }
@@ -293,12 +302,14 @@ void can_receive_task(void *arg)
                     update_mppt_received = true;
                 }
                 ESP_LOGD(TAG, "Received pub-msg on CAN:");
-                //ESP_LOG_BUFFER_HEX_LEVEL(TAG, message.data, message.data_length_code, ESP_LOG_INFO);
+                ESP_LOG_BUFFER_HEX_LEVEL(TAG, message.data, message.data_length_code, ESP_LOG_DEBUG);
             }
         }
         else {
+
             if (ret == ESP_ERR_TIMEOUT) {
-                ESP_LOGE(TAG, "Receive timed out");
+                ESP_LOGD(TAG, "Receive timed out");
+                // ToDo: Remove devices from device list
             }
             else if (ret == ESP_ERR_INVALID_STATE) {
                 ESP_LOGE(TAG, "Driver in invalid state");
@@ -317,24 +328,27 @@ char *ts_can_send(uint8_t *req, uint32_t query_size, uint8_t can_address, uint32
             free(msg.data);
         }
     }
-    int ret = isotp_send(&isotp_link, (uint8_t *) req, query_size);
-    ESP_LOGD(TAG, "ISOTP Send %s", ret == ESP_OK ? "OK" : "FAILED");
-    if (xQueueReceive(receive_queue, &msg, pdMS_TO_TICKS(500))) {
+
+    int ret = isotp_send(&isotp_link, req, query_size);
+    ESP_LOGI(TAG, "ISOTP Send %s", ret == ESP_OK ? "OK" : "FAILED");
+    if (xQueueReceive(receive_queue, &msg, pdMS_TO_TICKS(1500))) {
         *block_len = msg.len;
         return (char *) msg.data;
     }
+
     return NULL;
 }
 
 int ts_can_scan_device_info(TSDevice *device)
 {
     TSResponse res;
-    uint8_t query[] = "?info\n";
+    char query[] = "?info";
 
-    res.block = ts_can_send((void *)query, sizeof(query) - 2, can_addr_server, &(res.block_len));
+    res.block = ts_can_send((uint8_t *)query, strlen(query), device->can_address, &(res.block_len));
     if (res.block == NULL) {
         res.block = "";
     }
+
     if (ts_serial_resp_status(&res) == TS_STATUS_CONTENT) {
         // CAN bus is used in TEXT Mode for now so we use the serial methods here
         res.data = ts_serial_resp_data(&res);

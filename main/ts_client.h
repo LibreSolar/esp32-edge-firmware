@@ -13,6 +13,7 @@ extern "C" {
 
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "cJSON.h"
 
 /*
@@ -119,6 +120,11 @@ void ts_devices_init();
  * Scans the serial interface for a device and adds it if existing
  */
 void ts_devices_scan_serial();
+
+/**
+ * Adds an identified CAN device to the devices list (but does not retrieve device information)
+ */
+void ts_devices_add_can(uint8_t can_addr);
 
 /**
  * Will return a list with the names and IDs of connected devices
