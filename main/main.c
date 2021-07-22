@@ -59,7 +59,7 @@ void app_main(void)
     gpio_set_level(CONFIG_GPIO_LED, 1);
     // wait 3s to open serial terminal after flashing finished
     vTaskDelay(3000 / portTICK_PERIOD_MS);
-    printf("Booting Libre Solar Data Manager...\n");
+    printf("Booting Libre Solar ESP32 Edge...\n");
 
     init_fs();
 

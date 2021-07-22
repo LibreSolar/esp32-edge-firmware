@@ -1,5 +1,5 @@
 {
-  "name": "data-manager-frontend",
+  "name": "esp32-edge-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
