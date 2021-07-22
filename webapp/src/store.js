@@ -50,7 +50,7 @@ export default new Vuex.Store({
     initChartData(state, newData) {
       const keys = Object.keys(newData)
       keys.forEach(key => {
-        newData[key] = Array(100)
+        newData[key] = Array(180)
         state.chartData = newData
       })
       state.chartDataKeys = keys

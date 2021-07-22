@@ -19,16 +19,9 @@
                   ></v-select>
               </v-col>
             </v-row>
-            <v-row justify="center" dense>
-              <v-spacer></v-spacer>
-              <v-col cols=8>
-                <v-btn @click="clearSelection()">Clear Selection</v-btn>
-              </v-col>
-              <v-spacer></v-spacer>
-            </v-row>
             <v-row justify="center" class="flex-grow-0">
               <v-col cols=12 >
-                <line-chart :chart-data="storedata" :height="180" :responsive=false :options="options"></line-chart>
+                <line-chart :chart-data="storedata" :height="160" :options="options"></line-chart>
               </v-col>
             </v-row>
           </v-card-text>
@@ -90,36 +83,40 @@ export default {
       labels: [],
       run: true,
       timer: null,
-      intervall: 3,
-      numDataPoints: 100,
+      interval: 2,
+      //numDataPoints: 100,
       //options to pass to chart object
       options: {
         scales: {
-            xAxes: [{
-              display: true,
-              scaleLabel: {
-                display: true,
-                labelString: 'Minutes elapsed',
-                fontSize: 18
+          xAxes: [{
+            display: true,
+            type: 'time',
+            time: {
+              unit: 'second',
+              displayFormats: {
+                second: "HH:mm:ss",
               },
-              ticks: {
-                fontSize: 16
+              stepSize: 10
+            },
+            ticks: {
+              fontSize: 16,
+              source: 'auto'
             }
-            }],
-            yAxes: [{
-              ticks: {
-                fontSize: 16
+          }],
+          yAxes: [{
+            ticks: {
+              fontSize: 16
             }
-            }]
+          }]
         }
       }
     }
   },
   mounted() {
     //wait for data
-    this.$store.dispatch('initChartData').then(() =>{
+    this.$store.dispatch('initChartData').then(() => {
       clearInterval(this.timer);
-      this.timer = setInterval(this.getData, this.intervall*1000);
+      this.timer = setInterval(this.getData, this.interval * 1000);
       this.makeLabels();
       this.createSelection();
     });
@@ -140,7 +137,7 @@ export default {
         let colorNames = Object.keys(chartColors);
         buf["label"] = key
         buf["fill"] = false
-        buf["pointRadius"] = 2
+        buf["pointRadius"] = null
         buf["lineTension"] = 0
         buf["borderColor"] = chartColors[colorNames[index % colorNames.length]]
         buf["data"] = this.$store.state.chartData[originalKey]
@@ -150,11 +147,16 @@ export default {
         labels: this.labels,
         datasets: data
       }
+      this.makeLabels()
+    },
+    newDate(seconds) {
+      return new Date(Date.now() + seconds * 1000)
     },
     makeLabels() {
-      this.labels = Array(this.numDataPoints)
-      for(var i = -this.numDataPoints; i != 1; i++) {
-          this.labels[this.numDataPoints + i] = "" + (i / 20)
+      var numPoints = 180
+      this.labels = Array(numPoints)
+      for (var i = -numPoints; i != 1; i++) {
+        this.labels[numPoints + i] = this.newDate(i)
       }
     },
     //necessary to handle cases when info.json could not be loaded
@@ -163,16 +165,17 @@ export default {
       this.availableData = new Map()
       let key = ""
       this.$store.state.chartDataKeys.forEach((elem) => {
-        if(this.$store.state.thingsetStrings[id]?.output[elem]) {
+        if (this.$store.state.thingsetStrings[id]?.output[elem]) {
           key = this.$store.state.thingsetStrings[id].output[elem].title.en
-        } else {
+        }
+        else {
           key = elem
         }
-          this.availableData.set(key, elem)
-        })
+        this.availableData.set(key, elem)
+      })
       this.loading = false
     },
-    getData () {
+    getData() {
       this.$store.dispatch('updateChartData').then(() => {
         this.updateGraph();
       });
