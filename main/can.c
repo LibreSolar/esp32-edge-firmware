@@ -47,7 +47,6 @@ static uint8_t isotp_recv_buf[ISOTP_BUFSIZE];
 static uint8_t isotp_send_buf[ISOTP_BUFSIZE];
 
 uint32_t can_addr_client = 0xF1;     // this device
-uint32_t can_addr_server = 0x14;     // select MPPT (14) or BMS (0a)
 
 // buffer for JSON string generated from received data objects via CAN
 static char json_buf[500];
@@ -223,10 +222,6 @@ void can_setup()
         ESP_LOGE(TAG, "Failed to create receiving queue");
         return;
     }
-
-    /* Initialize link with the CAN ID we send with */
-    isotp_init_link(&isotp_link, can_addr_server << 8 | can_addr_client | 0x1ada << 16,
-        isotp_send_buf, sizeof(isotp_send_buf), isotp_recv_buf, sizeof(isotp_recv_buf));
 }
 
 void can_receive_task(void *arg)
@@ -250,7 +245,7 @@ void can_receive_task(void *arg)
             }
 
             /* checking for CAN ID used to receive ISO-TP frames */
-            if (message.identifier == (can_addr_client << 8 | can_addr_server | 0x1ada << 16)) {
+            if ((message.identifier & 0x1FFFFF00) == (can_addr_client << 8 | 0x1ada << 16)) {
                 ESP_LOGD(TAG, "ISO TP msg part received");
                 isotp_on_can_message(&isotp_link, message.data, message.data_length_code);
 
@@ -324,6 +319,10 @@ char *ts_can_send(uint8_t *req, uint32_t query_size, uint8_t can_address, uint32
             free(msg.data);
         }
     }
+
+    /* Initialize link with the CAN ID we send with */
+    isotp_init_link(&isotp_link, can_address << 8 | can_addr_client | 0x1ada << 16,
+        isotp_send_buf, sizeof(isotp_send_buf), isotp_recv_buf, sizeof(isotp_recv_buf));
 
     int ret = isotp_send(&isotp_link, req, query_size);
     ESP_LOGI(TAG, "ISOTP Send %s", ret == ESP_OK ? "OK" : "FAILED");

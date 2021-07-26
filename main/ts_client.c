@@ -76,13 +76,15 @@ char *ts_get_device_list()
         if (devices[i]->can_address > 0 && devices[i]->ts_device_id == NULL) {
             // device information not yet obtained
             int err = ts_can_scan_device_info(devices[i]);
-            if (err) {
+            if (!err) {
+                cJSON *id = cJSON_CreateString(devices[i]->ts_device_id);
+                cJSON_AddItemToObject(obj, devices[i]->ts_name, id);
+            }
+            else {
                 ts_remove_device(devices[i]);
                 devices[i] = NULL;
             }
         }
-        cJSON *id = cJSON_CreateString(devices[i]->ts_device_id);
-        cJSON_AddItemToObject(obj, devices[i]->ts_name, id);
         i++;
     }
     char *names_string = NULL;
