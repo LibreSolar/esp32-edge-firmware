@@ -41,8 +41,8 @@ static const char* TAG = "ts_mqtt";
 
 #if CONFIG_THINGSET_MQTT_TLS
 /* the certificate path is linked in via root CMakeLists.txt */
-extern const uint8_t mqtt_root_pem_start[]  asm("_binary_mqtt_root_pem_start");
-//extern const uint8_t mqtt_root_pem_end[]    asm("_binary_mqtt_root_pem_end");
+extern const uint8_t mqtt_root_pem_start[]  asm("_binary_isrgrootx1_pem_start");
+//extern const uint8_t mqtt_root_pem_end[]    asm("_binary_isrgrootx1_pem_end");
 #endif
 
 static void send_data(esp_mqtt_client_handle_t client, char *device_id, char *data, int size)
@@ -61,7 +61,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 {
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
     esp_mqtt_event_handle_t event = event_data;
-    esp_mqtt_client_handle_t client = event->client;
+    //esp_mqtt_client_handle_t client = event->client;
     //int msg_id;
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_CONNECTED:
@@ -127,16 +127,16 @@ void ts_mqtt_pub_task(void *arg)
 #if CONFIG_THINGSET_MQTT_TLS
         .cert_pem = (const char *)mqtt_root_pem_start,
 #endif
-        };
-        if (mqtt_config.use_broker_auth) {
-            mqtt_cfg.username = mqtt_config.username;
-            mqtt_cfg.password = mqtt_config.password;
-        }
+    };
+
+    if (mqtt_config.use_broker_auth) {
+        mqtt_cfg.username = mqtt_config.username;
+        mqtt_cfg.password = mqtt_config.password;
+    }
 
     // wait 3s for device to boot
     vTaskDelay(3000 / portTICK_PERIOD_MS);
 
-    ESP_LOGI(TAG, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
 
     // the last argument may be used to pass data to the event handler
