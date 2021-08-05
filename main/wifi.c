@@ -147,8 +147,6 @@ static void start(void)
 
     wifi_config_t wifi_config;
     bzero(&wifi_config, sizeof(wifi_config_t));
-    memcpy(wifi_config.sta.ssid, general_config.wifi_ssid, sizeof(wifi_config.sta.ssid));
-    memcpy(wifi_config.sta.password, general_config.wifi_password, sizeof(wifi_config.sta.password));
 
     ESP_LOGI(TAG, "Connecting to %s...", wifi_config.sta.ssid);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));

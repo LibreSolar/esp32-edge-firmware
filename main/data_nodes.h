@@ -110,8 +110,8 @@ char *build_query(uint8_t method, char *node, char *payload);
  * Structs to hold config data
  */
 typedef struct {
-    char wifi_ssid[STRING_LEN];
-    char wifi_password[STRING_LEN];
+    char wifi_ssid[STRING_LEN];         /* currently not used, configuration via BLE prov */
+    char wifi_password[STRING_LEN];     /* currently not used, configuration via BLE prov */
     char mdns_hostname[STRING_LEN];
     bool ts_can_active;
     bool ts_serial_active;

@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
 #ifndef UNIT_TEST
 
 #include <stdio.h>
@@ -57,6 +58,7 @@ void app_main(void)
     gpio_pad_select_gpio(CONFIG_GPIO_LED);
     gpio_set_direction(CONFIG_GPIO_LED, GPIO_MODE_OUTPUT);
     gpio_set_level(CONFIG_GPIO_LED, 1);
+
     // wait 3s to open serial terminal after flashing finished
     vTaskDelay(3000 / portTICK_PERIOD_MS);
     printf("Booting Libre Solar ESP32 Edge...\n");
@@ -78,13 +80,8 @@ void app_main(void)
         ts_devices_scan_serial();
     }
 
-    if (strlen(general_config.wifi_ssid) > 0) {
-        wifi_connect();
-    }
-    else {
-        // no hard-coded WiFi credentials --> start provisioning via BLE
-        provision();
-    }
+    // start WiFi provisioning via BLE
+    provision();
 
     start_web_server("/www");
 
@@ -97,4 +94,4 @@ void app_main(void)
     }
 }
 
-#endif //unit tests
+#endif // UNIT_TEST

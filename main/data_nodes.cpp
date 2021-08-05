@@ -5,6 +5,7 @@
  */
 
 #ifndef UNIT_TEST
+
 #include "data_nodes.h"
 #include "esp_system.h"
 #include "esp_log.h"
@@ -14,6 +15,7 @@
 #include "esp_err.h"
 #include "string.h"
 #include "esp_timer.h"
+
 // assumption that config data is smaller than 1024 bytes
 #define BUFFER_SIZE 1024;
 
@@ -223,10 +225,12 @@ void config_nodes_load()
         free(ts_request);
     }
 }
+
 static void reset_cb(void* arg)
 {
     esp_restart();
 }
+
 void reset_device()
 {
     const esp_timer_create_args_t reset_timer_args = {
