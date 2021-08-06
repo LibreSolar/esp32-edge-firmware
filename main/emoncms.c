@@ -31,7 +31,6 @@
 
 #include "ts_serial.h"
 #include "can.h"
-#include "wifi.h"
 #include "data_nodes.h"
 
 static const char* TAG = "emoncms";

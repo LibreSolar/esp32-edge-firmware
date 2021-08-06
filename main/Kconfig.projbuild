@@ -36,17 +36,6 @@ endmenu
 
 menu "User Configuration"
 
-    config WIFI_SSID
-        string "WiFi SSID"
-        help
-            SSID (network name) for the example to connect to.
-
-    config WIFI_PASSWORD
-        string "WiFi password"
-        help
-            WiFi password (WPA or WPA2).
-            Can be left blank if the network has no security set.
-
     config DEVICE_HOSTNAME
         string "Device host name"
         default "esp32-edge"

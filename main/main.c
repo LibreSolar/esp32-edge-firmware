@@ -35,7 +35,6 @@
 #include "ts_mqtt.h"
 #include "can.h"
 #include "emoncms.h"
-#include "wifi.h"
 #include "web_fs.h"
 #include "web_server.h"
 #include "provisioning.h"

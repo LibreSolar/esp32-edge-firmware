@@ -288,8 +288,6 @@ void config_nodes_save(const char *node)
 
 void config_nodes_load_kconfig()
 {
-    strncpy(general_config.wifi_ssid, CONFIG_WIFI_SSID, sizeof(general_config.wifi_ssid));
-    strncpy(general_config.wifi_password, CONFIG_WIFI_PASSWORD, sizeof(general_config.wifi_password));
     strncpy(general_config.mdns_hostname, CONFIG_DEVICE_HOSTNAME, sizeof(general_config.mdns_hostname));
     #ifdef CONFIG_THINGSET_CAN
     general_config.ts_can_active = CONFIG_THINGSET_CAN;

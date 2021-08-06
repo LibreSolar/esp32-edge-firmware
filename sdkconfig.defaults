@@ -17,10 +17,6 @@ CONFIG_ESPTOOLPY_FLASHSIZE="4MB"
 CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
 
-# Provisioning is not used if SSID is set below
-CONFIG_WIFI_SSID=""
-CONFIG_WIFI_PASSWORD=""
-
 # OpenEnergyMonitor Emoncms
 CONFIG_EMONCMS=y
 CONFIG_EMONCMS_HOST="emoncms.org"

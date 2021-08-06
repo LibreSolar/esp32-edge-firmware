@@ -116,7 +116,7 @@ static void initialize_mdns(void)
     // initialize mDNS
     ESP_ERROR_CHECK(mdns_init());
     // set mDNS hostname (required if you want to advertise services)
-    ESP_ERROR_CHECK(mdns_hostname_set(hostname));
+    //ESP_ERROR_CHECK(mdns_hostname_set(hostname));
     ESP_LOGI(TAG, "mDNS hostname set to: %s", hostname);
     // set default mDNS instance name
     ESP_ERROR_CHECK(mdns_instance_name_set(general_config.mdns_hostname));

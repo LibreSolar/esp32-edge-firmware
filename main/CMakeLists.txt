@@ -8,7 +8,6 @@ set(app_sources
 	"can.c"
 	"emoncms.c"
 	"stm32bl.c"
-	"wifi.c"
 	"web_fs.c"
 	"web_server.c"
 	"provisioning.c"
