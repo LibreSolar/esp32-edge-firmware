@@ -29,6 +29,8 @@ int url_offset_ts;
 int url_offset_ota;
 int url_offset_config;
 
+extern char device_id[9];
+
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
 #define SCRATCH_BUFSIZE (10240)
 
@@ -237,6 +239,26 @@ static esp_err_t ts_handler(httpd_req_t *req)
     return send_response(req, res);
 }
 
+esp_err_t esp_ota_start_handler(httpd_req_t *req)
+{
+    cJSON *res = cJSON_CreateObject();
+    esp_err_t err = esp_ota_handler(req, res);
+    char *res_string = cJSON_Print(res);
+    cJSON_Delete(res);
+
+    if (err == ESP_OK) {
+        httpd_resp_set_status(req, "200");
+        httpd_resp_sendstr(req, res_string);
+
+        reset_device();
+    } else {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, res_string);
+        err = ESP_FAIL;
+    }
+    free(res_string);
+    return err;
+}
+
 static esp_err_t stm_ota_start_handler(httpd_req_t *req)
 {
     const char endpoint[] = "/dfu";
@@ -281,8 +303,13 @@ static esp_err_t stm_ota_start_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-esp_err_t stm_ota_upload_handler(httpd_req_t *req)
+esp_err_t ota_upload_handler(httpd_req_t *req)
 {
+    /* check if target is self and invoke the proper handler */
+    if (strstr(req->uri, device_id)) {
+        return esp_ota_start_handler(req);
+    }
+
     if (req->content_len > 0x20000) {
         httpd_resp_set_status(req, "413");
         httpd_resp_sendstr(req, "Maximum size: 128 kByte");
@@ -319,27 +346,6 @@ out:
     return ESP_OK;
 }
 
-esp_err_t esp_ota_upload_handler(httpd_req_t *req)
-{
-    cJSON *res = cJSON_CreateObject();
-    esp_err_t err = esp_ota_handler(req, res);
-    char *res_string = cJSON_Print(res);
-    cJSON_Delete(res);
-
-    if (err == ESP_OK) {
-        httpd_resp_set_status(req, "200");
-        httpd_resp_sendstr(req, res_string);
-
-        //should be done after handler returns, maybe spawn a separate task which resets the device after some time
-        xTaskCreate(reset_device, "reset_task", 512, NULL, 0, NULL);
-    } else {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, res_string);
-        err = ESP_FAIL;
-    }
-    free(res_string);
-    return err;
-}
-
 esp_err_t start_web_server(const char *base_path)
 {
     if (base_path == NULL) {
@@ -361,6 +367,7 @@ esp_err_t start_web_server(const char *base_path)
     config.max_uri_handlers = 16;
     config.stack_size = 8*1024;
     config.lru_purge_enable = true;
+    config.recv_wait_timeout = 20;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
     url_offset_ts = strlen("/api/v1/ts/");
@@ -415,18 +422,18 @@ esp_err_t start_web_server(const char *base_path)
     };
     httpd_register_uri_handler(server, &ts_delete_uri);
 
-    httpd_uri_t ota_start_uri = {
+    httpd_uri_t stm_ota_start_uri = {
         .uri = "/api/v1/ota/*",
         .method = HTTP_GET,
         .handler = stm_ota_start_handler,
         .user_ctx = server_ctx
     };
-    httpd_register_uri_handler(server, &ota_start_uri);
+    httpd_register_uri_handler(server, &stm_ota_start_uri);
 
     httpd_uri_t ota_upload_uri = {
-        .uri = "/api/v1/ota/upload",
+        .uri = "/api/v1/ota/*",
         .method = HTTP_POST,
-        .handler = stm_ota_upload_handler,
+        .handler = ota_upload_handler,
         .user_ctx = server_ctx
     };
     httpd_register_uri_handler(server, &ota_upload_uri);

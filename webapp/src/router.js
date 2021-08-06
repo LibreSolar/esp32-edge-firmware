@@ -9,6 +9,7 @@ import IO from './views/IO.vue'
 import Ota from './views/Ota.vue'
 import DataLog from './views/DataLog.vue'
 import ConfigGeneral from './views/ConfigGeneral.vue'
+import OtaGeneral from './views/OtaGeneral.vue'
 
 Vue.use(Router)
 
@@ -55,12 +56,17 @@ const router = new Router({
       path: '/esp-config',
       name: 'esp-config',
       component: ConfigGeneral
+    },
+    {
+      path: '/esp-update',
+      name: 'esp-update',
+      component: OtaGeneral
     }
   ]
 })
 
 router.beforeEach((to, from, next) => {
-  if (!(['esp-config', 'home'].includes(to.name)) && store.state.loading) {
+  if (!(['esp-config', 'esp-update', 'home'].includes(to.name)) && store.state.loading) {
     next(false)
   }
   else next()

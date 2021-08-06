@@ -3,13 +3,14 @@
     <v-layout text-center align-center>
       <v-flex class="text-center">
         <v-card max-width="600" class="mx-auto my-auto">
-          <v-card-title class="justify-center">Over-the-Air-Upgrade</v-card-title>
+          <v-card-title class="justify-center"
+            >Over-the-Air-Upgrade</v-card-title
+          >
           <v-card-text>
             <v-row justify="center" dense>
               <v-col cols="10">
                 <div class="ma-auto">
-                  Select an image from your PC to upload. Once uploaded, you can
-                  start the update process
+                  Select an image from your PC to use. Please note that this process can take up to 5 minutes to complete!
                 </div>
               </v-col>
             </v-row>
@@ -30,23 +31,12 @@
               </v-col>
             </v-row>
             <v-row justify="center" dense>
-              <v-spacer></v-spacer>
               <v-col cols="2">
                 <v-btn
                   :loading="uploading"
-                  :disabled="uploadDisabled"
-                  @click="upload()"
-                >Upload</v-btn>
+                  @click="start()"
+                >Start</v-btn>
               </v-col>
-              <v-spacer></v-spacer>
-              <v-col cols="2">
-                <v-btn
-                  :loading="flashing"
-                  :disabled="flashDisabled"
-                  @click="flash()"
-                >Flash</v-btn
-              ></v-col>
-              <v-spacer></v-spacer>
             </v-row>
             <v-row justify="center">
               <v-alert
@@ -80,9 +70,6 @@ export default {
   data() {
     return {
       uploading: false,
-      flashing: false,
-      disableFlashBtn: true,
-      disableUploadBtn: false,
       file: null,
       status: null,
       alert: false,
@@ -94,74 +81,34 @@ export default {
   mounted() {
     this.fetchData("old");
   },
-  computed: {
-    flashDisabled() {
-      return this.disableFlashBtn;
-    },
-    uploadDisabled() {
-      return this.disableUploadBtn;
-    },
-  },
   methods: {
-    upload: function () {
+    start: function () {
       this.uploading = !this.uploading;
-      this.disable("upload");
       var reader = new FileReader();
       if (!this.file) {
         this.status = "No file selected";
         this.showAlert();
         this.uploading = !this.uploading;
-        this.enable("upload");
         return;
       }
       reader.readAsArrayBuffer(this.file);
       reader.onload = () => {
-        let id = this.$store.state.activeDeviceId;
+        let id = this.$store.state.selfInfo.DeviceID;
         this.$ajax
           .post("api/v1/ota/" + id, reader.result)
           .then((res) => {
-            this.status = "Image upload successfull";
-            this.enable("flash");
-            this.enable("upload");
-            this.uploading = !this.uploading;
-            this.showSuccess();
+            this.fetchData("new");
           })
           .catch((error) => {
             this.status =
-              "Could not upload image - Statuscode: " + error.response.status;
+              error.response.data?.error + " Statuscode: " + error.response.status;
             this.uploading = !this.uploading;
-            this.enable("upload");
-            this.disable("flash");
             this.showAlert();
           });
       };
     },
-    flash: function () {
-      this.flashing = !this.flashing;
-      this.disable("flash");
-      let id = this.$store.state.activeDeviceId;
-      this.$ajax
-        .get("api/v1/ota/" + id)
-        .then((res) => {
-          this.disable("flash");
-          this.enable("upload");
-          this.flashing = !this.flashing;
-          this.fetchData("new");
-        })
-        .catch((error) => {
-          this.status =
-            "Could not be flashed: " +
-            error.response.status +
-            "-" +
-            error.response.data;
-          this.flashing = !this.flashing;
-          this.enable("flash");
-          this.enable("upload");
-          this.showAlert();
-        });
-    },
     fetchData: function (target) {
-      let id = this.$store.state.activeDeviceId;
+      let id = this.$store.state.selfInfo.DeviceID;
       this.$ajax
         .get("api/v1/ts/" + id + "/info")
         .then((res) => {
@@ -175,6 +122,7 @@ export default {
               " --> " +
               this.NewFwVersion;
             this.showSuccess();
+            this.uploading = !this.uploading;
           }
           return;
         })
@@ -185,22 +133,8 @@ export default {
             "-" +
             error.response.data;
           this.showAlert();
-          return;
+          this.uploading = !this.uploading;
         });
-    },
-    enable: function (btn) {
-      if (btn == "flash") {
-        this.disableFlashBtn = false;
-      } else if (btn == "upload") {
-        this.disableUploadBtn = false;
-      }
-    },
-    disable: function (btn) {
-      if (btn == "flash") {
-        this.disableFlashBtn = true;
-      } else if (btn == "upload") {
-        this.disableUploadBtn = true;
-      }
     },
     showAlert: function () {
       this.success = false;

@@ -17,7 +17,7 @@
 static const char *TAG = "esp_ota";
 
 #define DIAGNOSTIC_PIN 4
-#define BUFFSIZE 4096
+#define BUFFSIZE 1024
 static char ota_write_data[BUFFSIZE + 1] = { 0 };
 
 static bool diagnostic(void)
@@ -83,10 +83,12 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
 
     int binary_file_length = req->content_len;
     int data_read = 0;
+    int total_received = 0;
     /* deal with all receive packets */
     bool image_header_was_checked = false;
-    while (binary_file_length - data_read > 0) {
-        data_read += httpd_req_recv(req, ota_write_data, BUFFSIZE);
+    while (binary_file_length - total_received > 0) {
+        data_read = httpd_req_recv(req, ota_write_data, BUFFSIZE);
+        total_received += data_read;
         if (data_read < 0) {
             ESP_LOGE(TAG, "Could not receive image");
             cJSON_AddStringToObject(res, "error", "Could not receive image");
@@ -123,7 +125,7 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
                         }
                     }
                     image_header_was_checked = true;
-                    err = esp_ota_begin(update_partition, req->content_len, &update_handle);
+                    err = esp_ota_begin(update_partition, binary_file_length, &update_handle);
                     if (err != ESP_OK) {
                         ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));
                         esp_ota_abort(update_handle);
@@ -144,19 +146,20 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
                 cJSON_AddStringToObject(res, "error", "Unable to write chunk to flash");
                 return ESP_FAIL;
             }
-            ESP_LOGD(TAG, "Written image length %d", data_read);
+            ESP_LOGD(TAG, "Written image length %d", total_received);
         } else if (data_read == 0) {
             if (errno == ECONNRESET || errno == ENOTCONN) {
                 ESP_LOGE(TAG, "Connection closed, errno = %d", errno);
                 break;
             }
-            if (data_read == req->content_len) {
+            if (total_received == binary_file_length) {
                 ESP_LOGI(TAG, "Connection closed");
                 break;
             }
         }
     }
-    if (data_read != req->content_len) {
+    ESP_LOGI(TAG, "Total image size received: %d bytes", total_received);
+    if (total_received != binary_file_length) {
         ESP_LOGI(TAG, "Error in receiving complete file");
         esp_ota_abort(update_handle);
         cJSON_AddStringToObject(res, "error", "Unable to write chunk to flash");

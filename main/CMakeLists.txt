@@ -38,3 +38,13 @@ spiffs_create_partition_image(website ../webapp/dist FLASH_IN_PROJECT)
 
 # Uncomment to upload STM32 firmware binary saved in ../stm_image/firmware.bin (for testing)
 #spiffs_create_partition_image(stm_ota ../stm_image FLASH_IN_PROJECT)
+find_package(Git)
+if(GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --long --dirty --tags
+        OUTPUT_VARIABLE FIRMWARE_VERSION_ID
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+else()
+    set(FIRMWARE_VERSION_ID "unknown")
+endif()
+set(PROJECT_VER "${FIRMWARE_VERSION_ID}")
