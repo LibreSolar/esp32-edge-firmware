@@ -50,7 +50,8 @@ void esp_ota_check_image()
             if (diagnostic_is_ok) {
                 ESP_LOGI(TAG, "Diagnostics completed successfully! Continuing execution ...");
                 esp_ota_mark_app_valid_cancel_rollback();
-            } else {
+            }
+            else {
                 ESP_LOGE(TAG, "Diagnostics failed! Start rollback to the previous version ...");
                 esp_ota_mark_app_invalid_rollback_and_reboot();
             }
@@ -69,9 +70,9 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
     const esp_partition_t *running = esp_ota_get_running_partition();
 
     if (configured != running) {
-        ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08x, but running from offset 0x%08x",
+        ESP_LOGW(TAG, "Configured boot partition at offset 0x%08x, is running from offset 0x%08x",
                  configured->address, running->address);
-        ESP_LOGW(TAG, "(This can happen if either the OTA boot data or preferred boot image become corrupted somehow.)");
+        ESP_LOGW(TAG, "(This happens if either the ota data or boot image become corrupted.)");
     }
     ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08x)",
              running->type, running->subtype, running->address);
@@ -84,6 +85,9 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
     int binary_file_length = req->content_len;
     int data_read = 0;
     int total_received = 0;
+
+    int len_img_head = sizeof(esp_image_header_t);
+    int len_img_seg_head = sizeof(esp_image_segment_header_t);
     /* deal with all receive packets */
     bool image_header_was_checked = false;
     while (binary_file_length - total_received > 0) {
@@ -93,34 +97,46 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
             ESP_LOGE(TAG, "Could not receive image");
             cJSON_AddStringToObject(res, "error", "Could not receive image");
             return ESP_FAIL;
-        } else if (data_read > 0) {
+        }
+        else if (data_read > 0) {
             if (image_header_was_checked == false) {
                 esp_app_desc_t new_app_info;
-                if (data_read > sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t)) {
+                int len = len_img_head
+                        + len_img_seg_head
+                        + sizeof(esp_app_desc_t);
+                if (data_read >  len) {
                     // check current version with downloading
-                    memcpy(&new_app_info, &ota_write_data[sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t)], sizeof(esp_app_desc_t));
-                    ESP_LOGI(TAG, "New firmware version: %s", new_app_info.version);
+                    memcpy(&new_app_info,
+                        &ota_write_data[len_img_head + len_img_seg_head],
+                        sizeof(esp_app_desc_t));
+                    ESP_LOGI(TAG, "New fw version: %s", new_app_info.version);
 
                     esp_app_desc_t running_app_info;
-                    if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
-                        ESP_LOGI(TAG, "Running firmware version: %s", running_app_info.version);
+                    int resp = esp_ota_get_partition_description(running, &running_app_info);
+                    if (resp == ESP_OK) {
+                        ESP_LOGI(TAG, "Running fw version: %s", running_app_info.version);
                     }
 
                     const esp_partition_t* last_invalid_app = esp_ota_get_last_invalid_partition();
                     esp_app_desc_t invalid_app_info;
-                    if (esp_ota_get_partition_description(last_invalid_app, &invalid_app_info) == ESP_OK) {
-                        ESP_LOGI(TAG, "Last invalid firmware version: %s", invalid_app_info.version);
+                    resp = esp_ota_get_partition_description(last_invalid_app, &invalid_app_info);
+                    if (resp == ESP_OK) {
+                        ESP_LOGI(TAG, "Last invalid fw version: %s", invalid_app_info.version);
                     }
 
                     // check current version with last invalid partition
                     if (last_invalid_app != NULL) {
-                        if (memcmp(invalid_app_info.version, new_app_info.version, sizeof(new_app_info.version)) == 0) {
+                        int bytes_coppied = memcmp(invalid_app_info.version,
+                                                    new_app_info.version,
+                                                    sizeof(new_app_info.version));
+                        if (bytes_coppied == 0) {
                             ESP_LOGW(TAG, "New version is the same as invalid version.");
-                            ESP_LOGW(TAG, "Previously, there was an attempt to launch the firmware with %s version, but it failed.", invalid_app_info.version);
-                            ESP_LOGW(TAG, "The firmware has been rolled back to the previous version.");
+                            ESP_LOGW(TAG, "Tried to launch the fw with %s version, but it failed.",
+                                    invalid_app_info.version);
+                            ESP_LOGW(TAG, "The fw has been rolled back to the last version.");
                             cJSON_AddStringToObject(res,
                                 "error",
-                                "New version is the same as invalid version, firmware has been rolled back to previos version");
+                                "New version is invalid, fw has been rolled back to last version");
                             return ESP_FAIL;
                         }
                     }
@@ -133,7 +149,8 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
                         return ESP_FAIL;
                     }
                     ESP_LOGI(TAG, "esp_ota_begin succeeded");
-                } else {
+                }
+                else {
                     ESP_LOGE(TAG, "received package does not fit len");
                     esp_ota_abort(update_handle);
                     cJSON_AddStringToObject(res, "error", "received package does not fit len");
@@ -147,7 +164,8 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
                 return ESP_FAIL;
             }
             ESP_LOGD(TAG, "Written image length %d", total_received);
-        } else if (data_read == 0) {
+        }
+        else if (data_read == 0) {
             if (errno == ECONNRESET || errno == ENOTCONN) {
                 ESP_LOGE(TAG, "Connection closed, errno = %d", errno);
                 break;
@@ -170,7 +188,8 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
         if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
             ESP_LOGE(TAG, "Image validation failed, image is corrupted");
             cJSON_AddStringToObject(res, "error", "Image validation failed, image is corrupted");
-        } else {
+        }
+        else {
             ESP_LOGE(TAG, "esp_ota_end failed (%s)!", esp_err_to_name(err));
             cJSON_AddStringToObject(res, "error", "esp_ota_end failed");
         }
@@ -180,7 +199,6 @@ esp_err_t esp_ota_handler(httpd_req_t *req, cJSON* res)
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)!", esp_err_to_name(err));
         cJSON_AddStringToObject(res, "error", "esp_ota_set_boot_partition failed");
-
     }
 
     return ESP_OK;

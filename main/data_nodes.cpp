@@ -130,7 +130,7 @@ void data_nodes_init()
     uint64_to_base32(id64, device_id, sizeof(device_id));
 
     const esp_app_desc_t *description = esp_ota_get_app_description();
-    strncpy(firmware_version, description->version, 32);
+    strncpy(firmware_version, description->version, sizeof(firmware_version));
 
     esp_err_t ret = nvs_flash_init_partition(PARTITION);
     if (ret != ESP_OK) {

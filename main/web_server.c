@@ -249,12 +249,12 @@ esp_err_t esp_ota_start_handler(httpd_req_t *req)
     if (err == ESP_OK) {
         httpd_resp_set_status(req, "200");
         httpd_resp_sendstr(req, res_string);
-
         reset_device();
     } else {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, res_string);
         err = ESP_FAIL;
     }
+
     free(res_string);
     return err;
 }

@@ -5,11 +5,15 @@
         <v-card class="mx-auto my-auto" max-width="1200">
           <v-card-title primary-title class="justify-center">Configuration</v-card-title>
           <v-tabs v-if="!loading" v-model="tab" background-color=secodary grow>
+            <v-tab>Update</v-tab>
             <v-tab
             v-for="node in Object.keys(dataObjects).sort()"
             :key="node">{{ node }}</v-tab>
           </v-tabs>
           <v-tabs-items v-model="tab">
+          <v-tab-item>
+            <esp-ota :deviceID="$store.state.selfInfo.DeviceID"></esp-ota>
+          </v-tab-item>
           <v-tab-item
             v-for="[key, values] in Object.entries(dataObjects).sort()"
             :key="key"
@@ -44,9 +48,11 @@
           </v-card-text>
         </v-tab-item>
         </v-tabs-items>
-        <v-btn color="secondary" @click="resetDevice()" class="mx-4">
-              <v-icon left>mdi-checkbox-marked-circle</v-icon> Reset Device
-            </v-btn>
+        <v-btn color="warning"
+              @click="resetDevice()"
+              class="mx-4">
+              <v-icon left>mdi-checkbox-marked-circle</v-icon>
+              Reset Device</v-btn>
           <v-card-text>
             <v-alert
               v-model="alert"
@@ -66,7 +72,12 @@
 </template>
 
 <script>
+import EspOta from '../components/EspOta'
+
 export default {
+  components: {
+    EspOta
+  },
   data() {
     return {
       nodes: [],
