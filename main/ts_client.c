@@ -84,6 +84,9 @@ char *ts_get_device_list()
                 ts_remove_device(devices[i]);
                 devices[i] = NULL;
             }
+        } else {
+            cJSON *id = cJSON_CreateString(devices[i]->ts_device_id);
+            cJSON_AddItemToObject(obj, devices[i]->ts_name, id);
         }
         i++;
     }
@@ -102,6 +105,9 @@ char *ts_get_device_list()
 
 TSDevice *ts_get_device(char *device_id)
 {
+    if (device_id == NULL) {
+        return NULL;
+    }
     for (int i = 0; i < sizeof(devices); i++) {
         if (devices[i] != NULL && devices[i]->ts_device_id != NULL) {
             if (strcmp(devices[i]->ts_device_id, device_id) == 0) {

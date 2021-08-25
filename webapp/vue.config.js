@@ -8,6 +8,11 @@ module.exports = {
         target: 'http://',
         changeOrigin: true,
         ws: true
+      },
+      '/api/v1/ota': {
+        target: 'http://',
+        changeOrigin: true,
+        ws: true
       }
     }
   },

@@ -14,6 +14,7 @@
 #include "esp_err.h"
 #include "string.h"
 #include "esp_timer.h"
+#include "esp_ota_ops.h"
 // assumption that config data is smaller than 1024 bytes
 #define BUFFER_SIZE 1024;
 
@@ -25,6 +26,7 @@ GeneralConfig general_config;
 
 char device_id[9];
 const char manufacturer[] = "Libre Solar";
+char firmware_version[32];
 
 static DataNode data_nodes[] = {
     TS_NODE_PATH(ID_INFO, "info", 0, NULL),
@@ -33,6 +35,9 @@ static DataNode data_nodes[] = {
         ID_INFO, TS_ANY_R | TS_MKR_W, 0),
 
     TS_NODE_STRING(0x1A, "Manufacturer", manufacturer, sizeof(manufacturer),
+        ID_INFO, TS_ANY_R | TS_MKR_W, 0),
+
+    TS_NODE_STRING(0x1B, "FirmwareVersion", firmware_version, sizeof(firmware_version),
         ID_INFO, TS_ANY_R | TS_MKR_W, 0),
 
     TS_NODE_PATH(ID_CONF, DATA_NODE_CONF, 0, NULL),
@@ -123,6 +128,9 @@ void data_nodes_init()
     id64 &= ~((uint64_t) 0xFFFFFFFF << 32);
     id64 += ((uint64_t)LIBRE_SOLAR_TYPE_ID) << 32;
     uint64_to_base32(id64, device_id, sizeof(device_id));
+
+    const esp_app_desc_t *description = esp_ota_get_app_description();
+    strncpy(firmware_version, description->version, sizeof(firmware_version));
 
     esp_err_t ret = nvs_flash_init_partition(PARTITION);
     if (ret != ESP_OK) {

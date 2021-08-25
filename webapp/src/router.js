@@ -59,11 +59,4 @@ const router = new Router({
   ]
 })
 
-router.beforeEach((to, from, next) => {
-  if (!(['esp-config', 'home'].includes(to.name)) && store.state.loading) {
-    next(false)
-  }
-  else next()
-})
-
 export default router

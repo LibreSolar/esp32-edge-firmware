@@ -6,7 +6,7 @@
       clipped-left
       dark
     >
-      <v-app-bar-nav-icon v-if="!setup" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+      <v-app-bar-nav-icon v-if="sideBar" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-spacer></v-spacer>
       <v-menu offset-y>
         <template v-slot:activator=" {on, attrs}">
@@ -18,7 +18,7 @@
           <v-list-item
             v-for="key in Object.keys($store.state.devices)"
             :key="key"
-            @click="$store.commit('changeDevice', key); setup = false"
+            @click="$store.commit('changeDevice', key); sideBar = true"
             link to="/info"
           >
             <v-list-item-title v-text="key"></v-list-item-title>
@@ -26,7 +26,7 @@
         </v-list>
       </v-menu>
       <v-spacer></v-spacer>
-      <v-btn icon large link to="/esp-config" class="primary" @click="setup = true">
+      <v-btn icon large link to="/esp-config" class="primary" @click="sideBar = false">
         <v-icon>mdi-cog</v-icon>
       </v-btn>
     </v-app-bar>
@@ -43,7 +43,7 @@
       <router-view/>
     </v-main>
 
-    <v-navigation-drawer v-model="drawer" app clipped v-if="!setup">
+    <v-navigation-drawer v-model="drawer" app clipped v-if="sideBar">
       <v-list dense nav>
         <v-list-item
           v-for="item in items"
@@ -96,7 +96,7 @@ export default {
         { title: 'Data Log', href: '/data-log', icon: 'mdi-chart-bar' },
         { title: 'Firmware Upgrade', href: '/ota', icon: 'mdi-upload'}
       ],
-      setup: false
+      sideBar: false
     }
   }
 };

@@ -39,6 +39,7 @@
 #include "web_server.h"
 #include "provisioning.h"
 #include "data_nodes.h"
+#include "ota.h"
 
 #define RX_TASK_PRIO    9       // receiving task priority
 extern EmoncmsConfig emon_config;
@@ -47,6 +48,8 @@ extern GeneralConfig general_config;
 
 void app_main(void)
 {
+    esp_ota_check_image();
+
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());

@@ -116,8 +116,9 @@ export default {
       }
       reader.readAsArrayBuffer(this.file);
       reader.onload = () => {
+        let id = this.$store.state.activeDeviceId;
         this.$ajax
-          .post("api/v1/ota/upload", reader.result)
+          .post("api/v1/ota/" + id, reader.result)
           .then((res) => {
             this.status = "Image upload successfull";
             this.enable("flash");
