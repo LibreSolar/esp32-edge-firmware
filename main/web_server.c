@@ -25,9 +25,8 @@
 
 static const char *TAG = "websrv";
 
-int url_offset_ts;
-int url_offset_ota;
-int url_offset_config;
+static int url_offset_ts;
+static int url_offset_ota;
 
 extern char device_id[9];
 
@@ -372,7 +371,6 @@ esp_err_t start_web_server(const char *base_path)
     ESP_LOGI(TAG, "Starting HTTP Server");
     url_offset_ts = strlen("/api/v1/ts/");
     url_offset_ota = strlen("/api/v1/ota/");
-    url_offset_config = strlen("/api/v1/config/");
 
     if (httpd_start(&server, &config) != ESP_OK) {
         ESP_LOGE(TAG, "Start server failed");
