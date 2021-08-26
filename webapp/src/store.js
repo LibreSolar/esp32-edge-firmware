@@ -109,16 +109,14 @@ export default new Vuex.Store({
         });
     },
     getThingsetStrings( { commit }) {
-      let deviceType = this.state.activeDevice.toLowerCase().split(" ")[0]
-      let version = this.state.info[this.state.activeDeviceId].FirmwareVersion .split(".")[0]
-      let base = "https://files.libre.solar/info/"
-      axios.get(base + deviceType + "/" + version + "/info.json")
+      axios.get(this.state.info[this.state.activeDeviceId].DataExtURL)
       .then(res => {
         commit("saveThingsetStrings", res.data)
       })
       .catch(error => {
         commit("triggerAlert",
-              "Unable to load additional information for " + this.state.activeDevice)
+              "Unable to fetch extended information for " + this.state.activeDevice +
+              " device data. Using basic information discovered from device.")
       })
     },
     initChartData( { commit }) {
