@@ -102,7 +102,7 @@ export default {
     fetchData: function() {
       let id = this.$store.state.activeDeviceId
       return this.$ajax
-        .get("api/v1/ts/" + id + "/rec")
+        .get("ts/" + id + "/rec")
         .then(res => {
           this.data = res.data
         })
@@ -122,7 +122,7 @@ export default {
     let payload = {}
     payload[name] = 0
     this.$ajax
-      .patch("api/v1/ts/" + id + "/rec", payload)
+      .patch("ts/" + id + "/rec", payload)
       .then(res => {
         this.fetchData();
         let label = this.$store.state.info ? this.$store.state.info.rec[name].title.en : name

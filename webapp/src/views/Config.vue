@@ -105,7 +105,7 @@ export default {
     fetchData: function() {
       let id = this.$store.state.activeDeviceId
       return this.$ajax
-        .get("api/v1/ts/" + id + "/conf")
+        .get("ts/" + id + "/conf")
         .then(res => {
           this.alert = false
           this.dataObjects = res.data
@@ -130,7 +130,7 @@ export default {
         }
       })
       this.$ajax
-      .patch("api/v1/ts/" + id + "/conf", this.diff)
+      .patch("ts/" + id + "/conf", this.diff)
       .then(res => {
           this.baseData = this.dataObjects
       })

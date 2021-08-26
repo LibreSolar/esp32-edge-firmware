@@ -72,7 +72,7 @@ export default {
     fetchData: function() {
       let id = this.$store.state.activeDeviceId
       return this.$ajax
-        .get("api/v1/ts/" + id + "/input")
+        .get("ts/" + id + "/input")
         .then(res => {
           this.alert = false
           this.dataObjects = res.data
@@ -87,7 +87,7 @@ export default {
       let body = {}
       body[name] = this.dataObjects[name]
       this.$ajax
-      .patch("api/v1/ts/" + id + "/input", body)
+      .patch("ts/" + id + "/input", body)
       .then(res => {
           this.alert = false
       })

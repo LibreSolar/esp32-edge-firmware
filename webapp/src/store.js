@@ -78,7 +78,7 @@ export default new Vuex.Store({
   },
   actions: {
     authenticate( { commit }, password){
-      return axios.post("api/v1/ts/" + this.state.activeDeviceId + "/auth",
+      return axios.post("ts/" + this.state.activeDeviceId + "/auth",
       '"' + password + '"',
       {headers: {"Content-Type": "text/plain"}})
       .then(res => {
@@ -90,7 +90,7 @@ export default new Vuex.Store({
       })
     },
     getDevices( { commit }) {
-      return  axios.get('api/v1/ts/')
+      return  axios.get('ts/')
         .then(res => {
           if (res.data) {
             commit('saveDevices', res.data)
@@ -100,7 +100,7 @@ export default new Vuex.Store({
       })
     },
     getDeviceInfo( { commit }) {
-        return axios.get("api/v1/ts/" + this.state.activeDeviceId + "/info")
+        return axios.get("ts/" + this.state.activeDeviceId + "/info")
         .then(res => {
           commit("saveDeviceInfo", res.data)
         })
@@ -122,7 +122,7 @@ export default new Vuex.Store({
       })
     },
     initChartData( { commit }) {
-      return axios.get("api/v1/ts/" + this.state.activeDeviceId + "/output")
+      return axios.get("ts/" + this.state.activeDeviceId + "/meas")
         .then(res => {
           commit("initChartData", res.data);
         })
@@ -131,7 +131,7 @@ export default new Vuex.Store({
         })
     },
     updateChartData({ commit }) {
-      return axios.get("api/v1/ts/" + this.state.activeDeviceId + "/output")
+      return axios.get("ts/" + this.state.activeDeviceId + "/meas")
         .then(res => {
           commit("updateChartData", res.data);
         })
@@ -140,7 +140,7 @@ export default new Vuex.Store({
         });
     },
     getInfoSelf({ commit }) {
-      return axios.get("api/v1/ts/" + this.state.self + "/info")
+      return axios.get("ts/" + this.state.self + "/info")
         .then(res => {
           commit("saveInfo", res.data);
         }).catch(error => {

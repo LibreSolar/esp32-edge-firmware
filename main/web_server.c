@@ -369,8 +369,8 @@ esp_err_t start_web_server(const char *base_path)
     config.recv_wait_timeout = 20;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
-    url_offset_ts = strlen("/api/v1/ts/");
-    url_offset_ota = strlen("/api/v1/ota/");
+    url_offset_ts = strlen("/ts/");
+    url_offset_ota = strlen("/ota/");
 
     if (httpd_start(&server, &config) != ESP_OK) {
         ESP_LOGE(TAG, "Start server failed");
@@ -380,7 +380,7 @@ esp_err_t start_web_server(const char *base_path)
 
     /* URI handler to get connected device list */
     httpd_uri_t ts_get_devices_uri = {
-        .uri = "/api/v1/ts/",
+        .uri = "/ts/",
         .method = HTTP_GET,
         .handler = ts_get_devices_handler,
         .user_ctx = server_ctx
@@ -389,7 +389,7 @@ esp_err_t start_web_server(const char *base_path)
 
     /* URI handler for fetching JSON data */
     httpd_uri_t ts_get_uri = {
-        .uri = "/api/v1/ts/*",
+        .uri = "/ts/*",
         .method = HTTP_GET,
         .handler = ts_handler,
         .user_ctx = server_ctx
@@ -397,7 +397,7 @@ esp_err_t start_web_server(const char *base_path)
     httpd_register_uri_handler(server, &ts_get_uri);
 
     httpd_uri_t ts_patch_uri = {
-        .uri = "/api/v1/ts/*",
+        .uri = "/ts/*",
         .method = HTTP_PATCH,
         .handler = ts_handler,
         .user_ctx = server_ctx
@@ -405,7 +405,7 @@ esp_err_t start_web_server(const char *base_path)
     httpd_register_uri_handler(server, &ts_patch_uri);
 
     httpd_uri_t ts_post_uri = {
-        .uri = "/api/v1/ts/*",
+        .uri = "/ts/*",
         .method = HTTP_POST,
         .handler = ts_handler,
         .user_ctx = server_ctx
@@ -413,7 +413,7 @@ esp_err_t start_web_server(const char *base_path)
     httpd_register_uri_handler(server, &ts_post_uri);
 
     httpd_uri_t ts_delete_uri = {
-        .uri = "/api/v1/ts/*",
+        .uri = "/ts/*",
         .method = HTTP_DELETE,
         .handler = ts_handler,
         .user_ctx = server_ctx
@@ -421,7 +421,7 @@ esp_err_t start_web_server(const char *base_path)
     httpd_register_uri_handler(server, &ts_delete_uri);
 
     httpd_uri_t stm_ota_start_uri = {
-        .uri = "/api/v1/ota/*",
+        .uri = "/ota/*",
         .method = HTTP_GET,
         .handler = stm_ota_start_handler,
         .user_ctx = server_ctx
@@ -429,7 +429,7 @@ esp_err_t start_web_server(const char *base_path)
     httpd_register_uri_handler(server, &stm_ota_start_uri);
 
     httpd_uri_t ota_upload_uri = {
-        .uri = "/api/v1/ota/*",
+        .uri = "/ota/*",
         .method = HTTP_POST,
         .handler = ota_upload_handler,
         .user_ctx = server_ctx
