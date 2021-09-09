@@ -34,8 +34,8 @@ The data can be accessed in the same way as described above.
 
 - Written in C using ESP-IDF and PlatformIO
 - Data input from Libre Solar devices via
-    - [LS.bus](https://libre.solar/docs/ls_bus/) (CAN bus)
-    - [LS.one](https://libre.solar/docs/ls_one/) (UART serial)
+    - [LS.bus](https://libre.solar/hardware/ls-bus.html) (CAN bus)
+    - [LS.one](https://libre.solar/hardware/ls-one.html) (UART serial)
 - Local communication via [ThingSet Protocol](http://libre.solar/thingset/)
 - Data access via HTTP JSON API
 - Publishing of monitoring data via WiFi to
