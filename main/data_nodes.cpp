@@ -108,9 +108,9 @@ static DataNode data_nodes[] = {
     TS_NODE_UINT32(0x47, "PubInterval", &(mqtt_config.pub_interval),
         ID_CONF_MQTT, TS_ANY_R | TS_ANY_W, PUB_NVM),
 
-    TS_NODE_PATH(ID_EXEC, "exec", 0, NULL),
+    TS_NODE_PATH(ID_EXEC, "rpc", 0, NULL),
 
-    TS_NODE_EXEC(0xE1, "reset", &reset_device, ID_EXEC, TS_ANY_RW),
+    TS_NODE_EXEC(0xE1, "x-reset", &reset_device, ID_EXEC, TS_ANY_RW),
 };
 
 ThingSet ts(data_nodes, sizeof(data_nodes)/sizeof(DataNode));

@@ -103,7 +103,7 @@ export default {
     fetchAvailableNodes: function() {
       let id = this.$store.state.self
       return this.$ajax
-        .get("api/v1/ts/" + id + "/conf/")
+        .get("ts/" + id + "/conf/")
         .then(res => {
           this.alert = false
           this.nodes = res.data
@@ -120,7 +120,7 @@ export default {
       let id = this.$store.state.self
       this.nodes.forEach(node => {
         promises.push(this.$ajax
-          .get("api/v1/ts/" + id + "/conf/" + node)
+          .get("ts/" + id + "/conf/" + node)
           .then(res => {
             this.alert = false
             this.dataObjects[node] = res.data
@@ -137,7 +137,7 @@ export default {
     saveValues: function(node) {
       let id = this.$store.state.self
       this.$ajax
-      .patch("api/v1/ts/" + id + "/conf/" + node, this.dataObjects[node])
+      .patch("ts/" + id + "/conf/" + node, this.dataObjects[node])
       .then(res => {
         this.alert_type = "success"
         this.status = "Values written: Statuscode " + res.status
@@ -154,7 +154,7 @@ export default {
     resetDevice: function() {
       let id = this.$store.state.self
       this.$ajax
-      .post("api/v1/ts/" + id + "/exec/reset")
+      .post("ts/" + id + "/rpc/x-reset")
       .then(res => {
         this.alert_type = "success"
         this.status = "Device will restart shortly: Statuscode " + res.status

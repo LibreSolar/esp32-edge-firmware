@@ -84,7 +84,7 @@ export default {
       reader.readAsArrayBuffer(this.file);
       reader.onload = () => {
         this.$ajax
-          .post("api/v1/ota/" + this.deviceID, reader.result)
+          .post("ota/" + this.deviceID, reader.result)
           .then((res) => {
             this.sleep(5).then(() => {
               this.fetchData("new");
@@ -102,7 +102,7 @@ export default {
     },
     fetchData: function (target) {
       this.$ajax
-        .get("api/v1/ts/" + this.deviceID + "/info")
+        .get("ts/" + this.deviceID + "/info")
         .then((res) => {
           if (target == "old") {
             this.oldFwVersion = res.data.FirmwareVersion;

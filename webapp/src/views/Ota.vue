@@ -118,7 +118,7 @@ export default {
       reader.onload = () => {
         let id = this.$store.state.activeDeviceId;
         this.$ajax
-          .post("api/v1/ota/" + id, reader.result)
+          .post("ota/" + id, reader.result)
           .then((res) => {
             this.status = "Image upload successfull";
             this.enable("flash");
@@ -141,7 +141,7 @@ export default {
       this.disable("flash");
       let id = this.$store.state.activeDeviceId;
       this.$ajax
-        .get("api/v1/ota/" + id)
+        .get("ota/" + id)
         .then((res) => {
           this.disable("flash");
           this.enable("upload");
@@ -163,7 +163,7 @@ export default {
     fetchData: function (target) {
       let id = this.$store.state.activeDeviceId;
       this.$ajax
-        .get("api/v1/ts/" + id + "/info")
+        .get("ts/" + id + "/info")
         .then((res) => {
           if (target == "old") {
             this.oldFwVersion = res.data.FirmwareVersion;

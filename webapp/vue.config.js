@@ -4,12 +4,13 @@ module.exports = {
   productionSourceMap: false,
   devServer: {
     proxy: {
-      '/api/v1/ts': {
+      '/ts': {
+        // add IP address of device below for frontend testing within local network
         target: 'http://',
         changeOrigin: true,
         ws: true
       },
-      '/api/v1/ota': {
+      '/ota': {
         target: 'http://',
         changeOrigin: true,
         ws: true

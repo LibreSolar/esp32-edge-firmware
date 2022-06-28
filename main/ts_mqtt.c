@@ -45,11 +45,12 @@ extern const uint8_t mqtt_root_pem_start[]  asm("_binary_isrgrootx1_pem_start");
 //extern const uint8_t mqtt_root_pem_end[]    asm("_binary_isrgrootx1_pem_end");
 #endif
 
-static void send_data(esp_mqtt_client_handle_t client, char *device_id, char *data, int size)
+static void send_data(esp_mqtt_client_handle_t client, char *device_id, char *path, char *data)
 {
     char mqtt_topic[256];
-    snprintf(mqtt_topic, sizeof(mqtt_topic), "dat/%s/%s", mqtt_config.username, device_id);
-    int msg_id = esp_mqtt_client_publish(client, mqtt_topic, data, size, 0, 0);
+    snprintf(mqtt_topic, sizeof(mqtt_topic), "ts/%s/%s/tx/%s",
+        mqtt_config.username, device_id, path);
+    int msg_id = esp_mqtt_client_publish(client, mqtt_topic, data, 0, 0, 0);
     ESP_LOGI(TAG, "message sent to %s with msg_id=%d", mqtt_topic, msg_id);
 }
 
@@ -165,13 +166,21 @@ void ts_mqtt_pub_task(void *arg)
             printf("Waiting for pub msg\n");
         }
 
-        int data_len = strlen(pub_msg) - 2;
-        if (data_len > 0) {
+        // message format: #<path> <json-data>
+        char *delimiter = strchr(pub_msg, ' ');
+        if (delimiter != NULL && pub_msg[0] == '#') {
             gpio_set_level(CONFIG_GPIO_LED, 0);
-            send_data(client, ts_device.ts_device_id, pub_msg + 2, data_len);
-            printf("Received: %s\n", pub_msg);
-            ts_serial_pubmsg_clear();
+            if (delimiter != pub_msg + 1) {
+                *delimiter = '\0';      // null-terminate path section
+                send_data(client, ts_device.ts_device_id, pub_msg + 1, delimiter + 1);
+            }
+            else {
+                // old ThingSet statement format without path
+                send_data(client, ts_device.ts_device_id, "serial", delimiter + 1);
+            }
+            printf("Publishing via MQTT: %s\n", pub_msg);
         }
+        ts_serial_pubmsg_clear();
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
         gpio_set_level(CONFIG_GPIO_LED, 1);
